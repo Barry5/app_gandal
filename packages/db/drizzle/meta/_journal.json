@@ -1,0 +1,34 @@
+{
+  "version": "6",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1779289196605,
+      "tag": "0000_remarkable_nuke",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1779435937542,
+      "tag": "0001_cinetpay_provider",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779440506382,
+      "tag": "0002_offline_access_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779445588124,
+      "tag": "0003_admin_governance",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: savoir-api
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: corepack enable && corepack prepare pnpm@8.15.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @savoir/shared build && pnpm --filter @savoir/api build
+    startCommand: pnpm --filter @savoir/api start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20.17.0
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        value: "false"
+      - key: JWT_SECRET
+        sync: false
+      - key: ACCESS_CODE_PEPPER
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: API_PUBLIC_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_UPLOAD_PRESET
+        sync: false
+      - key: CLOUDINARY_VIDEO_FOLDER
+        value: courses/videos
+      - key: CLOUDINARY_VIDEO_DELIVERY_TYPE
+        value: upload
+      - key: CINETPAY_API_KEY
+        sync: false
+      - key: CINETPAY_SITE_ID
+        sync: false
+      - key: CINETPAY_SECRET_KEY
+        sync: false
+      - key: CINETPAY_CHANNELS
+        value: MOBILE_MONEY
