@@ -14,6 +14,8 @@ import { certificateRoutes } from './routes/certificates.js';
 import { gamificationRoutes } from './routes/gamification.js';
 import { aiRoutes } from './routes/ai.js';
 import { pricingRoutes } from './routes/pricing.js';
+import { analyticsRoutes } from './routes/analytics.js';
+import { financeRoutes } from './routes/finances.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -105,6 +107,8 @@ async function start() {
     server.register(gamificationRoutes, { prefix: '/api/gamification' });
     server.register(aiRoutes, { prefix: '/api/ai' });
     server.register(pricingRoutes, { prefix: '/api/pricing' });
+    server.register(analyticsRoutes, { prefix: '/api/analytics' });
+    server.register(financeRoutes, { prefix: '/api/finances' });
 
     server.get('/api/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 

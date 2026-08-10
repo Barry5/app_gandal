@@ -575,7 +575,7 @@ function compactPayload<T extends Record<string, unknown>>(payload: T): Partial<
   ) as Partial<T>;
 }
 
-function getApiErrorMessage(payload: { error?: string; details?: string | Array<{ field?: string; message?: string }> }) {
+export function getApiErrorMessage(payload: { error?: string; details?: string | Array<{ field?: string; message?: string }> }) {
   if (typeof payload.details === 'string' && payload.details.trim()) {
     return payload.details;
   }
@@ -825,6 +825,218 @@ export const paymentApi = {
 
   async verify(reference: string): Promise<{ payment: any }> {
     return apiRequest(`/payments/verify/${reference}`);
+  },
+};
+
+export type PaymentSubmissionDto = {
+  id: string;
+  userId: string;
+  user?: { id: string; name?: string | null; email?: string | null; phone?: string | null };
+  courseId: string;
+  course?: { id: string; title?: string | null; thumbnailUrl?: string | null; priceCfa?: number };
+  trainerId?: string | null;
+  trainerName?: string | null;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  phoneNumber?: string | null;
+  operatorReference?: string | null;
+  paymentDate?: string | null;
+  proofUrl?: string | null;
+  notes?: string | null;
+  status: 'PENDING_PAYMENT' | 'PAYMENT_SUBMITTED' | 'PAYMENT_VERIFIED' | 'PAYMENT_REJECTED' | 'ACTIVATED';
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
+  activatedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export type FinancialTransactionDto = {
+  id: string;
+  activation_id?: string;
+  activationId?: string;
+  course_id?: string;
+  courseId?: string;
+  course_title?: string | null;
+  courseTitle?: string | null;
+  course_thumbnail?: string | null;
+  trainer_id?: string;
+  trainerId?: string;
+  trainer_name?: string | null;
+  trainerName?: string | null;
+  trainer_phone?: string | null;
+  trainer_email?: string | null;
+  business_name?: string | null;
+  student_id?: string;
+  student_name?: string | null;
+  studentName?: string | null;
+  gross_amount: number | string;
+  grossAmount?: number;
+  platform_commission: number | string;
+  platformCommission?: number;
+  trainer_amount: number | string;
+  trainerAmount?: number;
+  currency?: string;
+  payment_method?: string | null;
+  payment_reference?: string | null;
+  commission_rate?: number;
+  status: 'DUE' | 'VALIDATED' | 'PAID';
+  paid_at?: string | null;
+  created_at?: string | null;
+  createdAt?: string | null;
+};
+
+export type AdminDashboardDto = {
+  overview: {
+    total_creators: number;
+    active_creators: number;
+    total_learners: number;
+    total_courses: number;
+    published_courses: number;
+    total_enrollments: number;
+    total_activations: number;
+    pending_submissions: number;
+    verified_submissions: number;
+  };
+  financial: {
+    gross_revenue: number;
+    platform_revenue: number;
+    trainer_revenue: number;
+    trainer_due: number;
+    trainer_paid: number;
+  };
+  categories: Array<{ category: string; courses: number }>;
+  activationsByDay: Array<{ day: string; activations: number }>;
+};
+
+export const financeApi = {
+  async submitOfflinePayment(data: {
+    courseId: string;
+    amount: number;
+    paymentMethod: 'orange_money' | 'mtn_momo' | 'card' | 'bank_transfer';
+    phoneNumber?: string;
+    operatorReference?: string;
+    paymentDate?: string;
+    proofUrl?: string;
+    notes?: string;
+  }): Promise<{ submissionId: string; status: string; message: string }> {
+    return apiRequest('/finances/submissions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async mySubmissions(): Promise<PaymentSubmissionDto[]> {
+    const payload = await apiRequest<{ submissions: PaymentSubmissionDto[] }>('/finances/submissions/mine');
+    return payload.submissions;
+  },
+
+  async adminListSubmissions(params: { status?: string; search?: string; page?: number; limit?: number } = {}): Promise<{
+    submissions: PaymentSubmissionDto[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const query = new URLSearchParams({
+      status: params.status || 'ALL',
+      search: params.search || '',
+      page: String(params.page || 1),
+      limit: String(params.limit || 20),
+    });
+    return apiRequest('/finances/admin/submissions?' + query.toString());
+  },
+
+  async adminGetSubmission(id: string): Promise<{ submission: PaymentSubmissionDto }> {
+    return apiRequest(`/finances/admin/submissions/${id}`);
+  },
+
+  async verifySubmission(id: string): Promise<{ status: string; message: string }> {
+    return apiRequest(`/finances/admin/submissions/${id}/verify`, { method: 'POST', body: JSON.stringify({}) });
+  },
+
+  async rejectSubmission(id: string, reason: string): Promise<{ status: string; message: string }> {
+    return apiRequest(`/finances/admin/submissions/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  async activateSubmission(id: string): Promise<{
+    status: string;
+    activationId: string;
+    reference: string;
+    grossAmount: number;
+    platformCommission: number;
+    trainerAmount: number;
+    message: string;
+  }> {
+    return apiRequest(`/finances/admin/submissions/${id}/activate`, { method: 'POST', body: JSON.stringify({}) });
+  },
+
+  async adminListActivations(params: { search?: string; page?: number; limit?: number } = {}): Promise<{
+    activations: any[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const query = new URLSearchParams({
+      search: params.search || '',
+      page: String(params.page || 1),
+      limit: String(params.limit || 20),
+    });
+    return apiRequest('/finances/admin/activations?' + query.toString());
+  },
+
+  async adminListTransactions(params: { status?: string; page?: number; limit?: number } = {}): Promise<{
+    transactions: FinancialTransactionDto[];
+    summary: {
+      total_gross: number;
+      total_commission: number;
+      total_trainer: number;
+      total_due_to_trainers: number;
+      total_paid_to_trainers: number;
+    };
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const query = new URLSearchParams({
+      status: params.status || 'ALL',
+      page: String(params.page || 1),
+      limit: String(params.limit || 20),
+    });
+    return apiRequest('/finances/admin/transactions?' + query.toString());
+  },
+
+  async validateTransaction(id: string): Promise<{ status: string; message: string }> {
+    return apiRequest(`/finances/admin/transactions/${id}/validate`, { method: 'POST', body: JSON.stringify({}) });
+  },
+
+  async payTransaction(id: string): Promise<{ status: string; message: string }> {
+    return apiRequest(`/finances/admin/transactions/${id}/pay`, { method: 'POST', body: JSON.stringify({}) });
+  },
+
+  async adminDashboard(): Promise<AdminDashboardDto> {
+    return apiRequest('/finances/admin/dashboard');
+  },
+
+  async creatorSummary(): Promise<{
+    summary: {
+      total_transactions: number;
+      gross_revenue: number;
+      platform_commission: number;
+      net_revenue: number;
+      due_amount: number;
+      validated_amount: number;
+      paid_amount: number;
+    };
+  }> {
+    return apiRequest('/finances/creator/summary');
+  },
+
+  async creatorTransactions(params: { status?: string } = {}): Promise<{ transactions: FinancialTransactionDto[] }> {
+    const query = new URLSearchParams({ status: params.status || 'ALL' });
+    return apiRequest('/finances/creator/transactions?' + query.toString());
+  },
+
+  async creatorActivations(): Promise<{ activations: any[] }> {
+    return apiRequest('/finances/creator/activations');
   },
 };
 

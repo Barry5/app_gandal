@@ -11,6 +11,7 @@ import {
   BookMarked,
   BookOpen,
   Calendar,
+  CheckCircle2,
   ChevronLeft,
   GraduationCap,
   LayoutDashboard,
@@ -23,6 +24,7 @@ import {
   Settings,
   Trophy,
   Users,
+  Wallet,
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -46,6 +48,7 @@ const creatorNavItems: NavItem[] = [
   { icon: BookOpen, label: 'Mes cours', href: '/dashboard/courses', description: 'Formations' },
   { icon: Users, label: 'Ã‰lÃ¨ves', href: '/dashboard/students', description: 'Suivi' },
   { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics', description: 'Performance' },
+  { icon: Wallet, label: 'Finances', href: '/dashboard/finances', description: 'Commissions' },
   { icon: MessageSquare, label: 'Messages', href: '/dashboard/messages', description: 'Ã‰changes', badge: 3 },
   { icon: Award, label: 'Certificats', href: '/dashboard/certificates', description: 'Validations' },
   { icon: Settings, label: 'ParamÃ¨tres', href: '/dashboard/settings', description: 'Compte' },
@@ -93,8 +96,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { user, logout, isCreator, isAdmin, isAuthenticated, isLoading } = useAuth();
   const adminNavItems: NavItem[] = [
-    { icon: LayoutDashboard, label: 'Vue admin', href: '/dashboard', description: 'Pilotage' },
+    { icon: LayoutDashboard, label: 'Vue admin', href: '/dashboard/admin/dashboard', description: 'Pilotage' },
     { icon: ShieldCheck, label: 'Administration', href: '/dashboard/admin', description: 'Gouvernance' },
+    { icon: CheckCircle2, label: 'Activations', href: '/dashboard/admin/activations', description: 'Paiements' },
+    { icon: Wallet, label: 'Finances', href: '/dashboard/admin/finances', description: 'Ledger' },
     { icon: BookOpen, label: 'Cours', href: '/dashboard/courses', description: 'Supervision' },
     { icon: Percent, label: 'Commissions', href: '/admin/commissions', description: 'Tarifs' },
     { icon: Settings, label: 'Parametres', href: '/dashboard/settings', description: 'Systeme' },

@@ -8,6 +8,18 @@ export const progressStatus = pgEnum('progress_status', ['not_started', 'in_prog
 export const creatorPlans = pgEnum('creator_plans', ['free', 'pro', 'enterprise']);
 export const paymentMethods = pgEnum('payment_methods', ['orange_money', 'mtn_momo', 'card']);
 export const paymentProviders = pgEnum('payment_providers', ['paystack', 'flutterwave', 'cinetpay', 'offline_code']);
+export const paymentSubmissionStatus = pgEnum('payment_submission_status', [
+  'PENDING_PAYMENT',
+  'PAYMENT_SUBMITTED',
+  'PAYMENT_VERIFIED',
+  'PAYMENT_REJECTED',
+  'ACTIVATED',
+]);
+export const financialTransactionStatus = pgEnum('financial_transaction_status', [
+  'DUE',
+  'VALIDATED',
+  'PAID',
+]);
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -353,6 +365,91 @@ export const payments = pgTable('payments', {
   idx_payments_provider_ref: index('idx_payments_provider_ref').on(table.providerRef),
 }));
 
+export const paymentSubmissions = pgTable('payment_submissions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  amount: integer('amount').notNull(),
+  currency: varchar('currency', { length: 3 }).notNull().default('GNF'),
+  paymentMethod: varchar('payment_method', { length: 50 }).notNull(),
+  phoneNumber: varchar('phone_number', { length: 20 }),
+  operatorReference: varchar('operator_reference', { length: 255 }),
+  paymentDate: varchar('payment_date', { length: 20 }),
+  proofUrl: varchar('proof_url', { length: 500 }),
+  notes: text('notes'),
+  status: paymentSubmissionStatus('status').notNull().default('PENDING_PAYMENT'),
+  reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+  reviewedAt: timestamp('reviewed_at'),
+  rejectionReason: text('rejection_reason'),
+  activatedAt: timestamp('activated_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_payment_submissions_user: index('idx_payment_submissions_user').on(table.userId),
+  idx_payment_submissions_course: index('idx_payment_submissions_course').on(table.courseId),
+  idx_payment_submissions_status: index('idx_payment_submissions_status').on(table.status),
+}));
+
+export const courseActivations = pgTable('course_activations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  trainerId: uuid('trainer_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  courseSnapshot: jsonb('course_snapshot').$type<{
+    title: string;
+    priceCfa: number;
+    currency: string;
+  }>().notNull(),
+  priceAtActivation: integer('price_at_activation').notNull(),
+  currency: varchar('currency', { length: 3 }).notNull().default('GNF'),
+  paymentMethod: varchar('payment_method', { length: 50 }).notNull(),
+  paymentReference: varchar('payment_reference', { length: 255 }),
+  grossAmount: integer('gross_amount').notNull(),
+  platformCommission: integer('platform_commission').notNull(),
+  trainerAmount: integer('trainer_amount').notNull(),
+  commissionRate: integer('commission_rate').notNull(),
+  paymentSubmissionId: uuid('payment_submission_id').references(() => paymentSubmissions.id, { onDelete: 'set null' }),
+  status: varchar('status', { length: 20 }).notNull().default('ACTIVATED'),
+  activatedBy: uuid('activated_by').references(() => users.id, { onDelete: 'set null' }),
+  activatedAt: timestamp('activated_at').notNull().defaultNow(),
+  events: jsonb('events').$type<Array<{
+    type: string;
+    at: string;
+    by?: string;
+    note?: string;
+  }>>().notNull().default([]),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_course_activations_course: index('idx_course_activations_course').on(table.courseId),
+  idx_course_activations_student: index('idx_course_activations_student').on(table.studentId),
+  idx_course_activations_trainer: index('idx_course_activations_trainer').on(table.trainerId),
+}));
+
+export const financialTransactions = pgTable('financial_transactions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  activationId: uuid('activation_id').references(() => courseActivations.id, { onDelete: 'cascade' }).notNull().unique(),
+  courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  trainerId: uuid('trainer_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  grossAmount: integer('gross_amount').notNull(),
+  platformCommission: integer('platform_commission').notNull(),
+  trainerAmount: integer('trainer_amount').notNull(),
+  currency: varchar('currency', { length: 3 }).notNull().default('GNF'),
+  paymentMethod: varchar('payment_method', { length: 50 }).notNull(),
+  paymentReference: varchar('payment_reference', { length: 255 }),
+  commissionRate: integer('commission_rate').notNull(),
+  status: financialTransactionStatus('status').notNull().default('DUE'),
+  validatedBy: uuid('validated_by').references(() => users.id, { onDelete: 'set null' }),
+  validatedAt: timestamp('validated_at'),
+  paidBy: uuid('paid_by').references(() => users.id, { onDelete: 'set null' }),
+  paidAt: timestamp('paid_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_financial_transactions_trainer: index('idx_financial_transactions_trainer').on(table.trainerId),
+  idx_financial_transactions_status: index('idx_financial_transactions_status').on(table.status),
+  idx_financial_transactions_course: index('idx_financial_transactions_course').on(table.courseId),
+}));
+
 export const aiConversations = pgTable('ai_conversations', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -624,3 +721,6 @@ export type Challenge = typeof challenges.$inferSelect;
 export type UserChallengeProgress = typeof userChallengeProgress.$inferSelect;
 export type XpTransaction = typeof xpTransactions.$inferSelect;
 export type LeaderboardEntry = typeof leaderboard.$inferSelect;
+export type PaymentSubmission = typeof paymentSubmissions.$inferSelect;
+export type CourseActivation = typeof courseActivations.$inferSelect;
+export type FinancialTransaction = typeof financialTransactions.$inferSelect;
