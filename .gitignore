@@ -13,3 +13,6 @@ uploads/
 *.tsbuildinfo
 .vercel/
 apps/web/package-lock.json
+
+.vercel
+.env*
