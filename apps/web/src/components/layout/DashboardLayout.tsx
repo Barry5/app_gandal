@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   GraduationCap,
   LayoutDashboard,
+  Percent,
   ShieldCheck,
   LogOut,
   Menu,
@@ -95,6 +96,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { icon: LayoutDashboard, label: 'Vue admin', href: '/dashboard', description: 'Pilotage' },
     { icon: ShieldCheck, label: 'Administration', href: '/dashboard/admin', description: 'Gouvernance' },
     { icon: BookOpen, label: 'Cours', href: '/dashboard/courses', description: 'Supervision' },
+    { icon: Percent, label: 'Commissions', href: '/admin/commissions', description: 'Tarifs' },
     { icon: Settings, label: 'Parametres', href: '/dashboard/settings', description: 'Systeme' },
   ];
   const isDashboardUser = isCreator || isAdmin;

@@ -1,11 +1,35 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { courseService } from '../services/api';
 
 export default function CourseBuilderScreen() {
   const navigation = useNavigation<any>();
   const [step, setStep] = useState(1);
   const [courseData, setCourseData] = useState({ title: '', description: '', price: '' });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleCreateCourse = async () => {
+    if (!courseData.title.trim()) {
+      Alert.alert('Erreur', 'Le titre est requis');
+      return;
+    }
+    try {
+      setIsSaving(true);
+      await courseService.create({
+        title: courseData.title,
+        description: courseData.description,
+        priceCfa: Number(courseData.price) || 0,
+      });
+      Alert.alert('Succes', 'Cours cree avec succes', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.response?.data?.error || 'Creation impossible');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -61,6 +85,14 @@ export default function CourseBuilderScreen() {
               value={courseData.price}
               onChangeText={(text) => setCourseData({ ...courseData, price: text })}
             />
+            {Number(courseData.price) === 0 && (
+              <Text style={styles.freeBadge}>Ce cours sera gratuit</Text>
+            )}
+            {Number(courseData.price) > 0 && (
+              <Text style={styles.priceInfo}>
+                Prix: {Number(courseData.price).toLocaleString()} GNF
+              </Text>
+            )}
             <Text style={styles.infoText}>Moyens de paiement: Orange Money, MTN MoMo, Visa</Text>
           </View>
         )}
@@ -68,19 +100,31 @@ export default function CourseBuilderScreen() {
         {step === 4 && (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Publier le cours</Text>
-            <Text style={styles.emptyText}>Vérifiez et publiez votre cours</Text>
+            <Text style={styles.emptyText}>Vérifiez les informations avant publication</Text>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>{courseData.title || '(Sans titre)'}</Text>
+              <Text style={styles.summaryPrice}>
+                {Number(courseData.price) === 0 ? 'Gratuit' : `${Number(courseData.price).toLocaleString()} GNF`}
+              </Text>
+            </View>
           </View>
         )}
       </ScrollView>
 
       <View style={styles.footer}>
         {step > 1 && (
-          <TouchableOpacity style={styles.prevButton} onPress={() => setStep(step - 1)}>
-            <Text style={styles.prevButtonText}>Précédent</Text>
+          <TouchableOpacity style={styles.backButton} onPress={() => setStep(step - 1)}>
+            <Text style={styles.backButtonText}>Retour</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.nextButton} onPress={() => step < 4 ? setStep(step + 1) : navigation.goBack()}>
-          <Text style={styles.nextButtonText}>{step === 4 ? 'Publier' : 'Suivant'}</Text>
+        <TouchableOpacity
+          style={[styles.nextButton, step === 4 && styles.saveButton]}
+          onPress={step === 4 ? handleCreateCourse : () => setStep(step + 1)}
+          disabled={isSaving}
+        >
+          <Text style={styles.nextButtonText}>
+            {isSaving ? 'Creation...' : step === 4 ? 'Creer le cours' : 'Suivant'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -89,24 +133,30 @@ export default function CourseBuilderScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 20 },
+  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
   title: { fontSize: 28, fontWeight: 'bold', color: '#0f172a', marginBottom: 16 },
   stepIndicator: { flexDirection: 'row', gap: 8 },
-  stepDot: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb' },
+  stepDot: { width: 24, height: 6, borderRadius: 3, backgroundColor: '#e2e8f0' },
   stepDotActive: { backgroundColor: '#6366f1' },
   content: { flex: 1, padding: 20 },
-  stepContent: {},
-  stepTitle: { fontSize: 20, fontWeight: 'bold', color: '#0f172a', marginBottom: 24 },
-  inputLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
-  input: { backgroundColor: '#ffffff', borderRadius: 12, padding: 16, fontSize: 16, color: '#0f172a', borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 16 },
+  stepContent: { paddingBottom: 40 },
+  stepTitle: { fontSize: 22, fontWeight: '700', color: '#0f172a', marginBottom: 20 },
+  inputLabel: { fontSize: 14, fontWeight: '600', color: '#475569', marginBottom: 8, marginTop: 16 },
+  input: { backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: '#0f172a' },
   textArea: { height: 120, textAlignVertical: 'top' },
-  emptyText: { fontSize: 14, color: '#64748b', marginBottom: 20, textAlign: 'center' },
-  addButton: { backgroundColor: '#6366f1', padding: 16, borderRadius: 12, alignItems: 'center' },
-  addButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  infoText: { fontSize: 12, color: '#64748b', textAlign: 'center', marginTop: 16 },
-  footer: { flexDirection: 'row', padding: 20, gap: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb', backgroundColor: '#ffffff' },
-  prevButton: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: '#e5e7eb' },
-  prevButtonText: { fontSize: 16, fontWeight: '600', color: '#64748b' },
-  nextButton: { flex: 2, backgroundColor: '#6366f1', padding: 16, borderRadius: 12, alignItems: 'center' },
-  nextButtonText: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
+  emptyText: { fontSize: 14, color: '#94a3b8', marginBottom: 20 },
+  addButton: { borderWidth: 2, borderColor: '#6366f1', borderStyle: 'dashed', borderRadius: 12, padding: 20, alignItems: 'center' },
+  addButtonText: { color: '#6366f1', fontSize: 16, fontWeight: '600' },
+  freeBadge: { backgroundColor: '#dcfce7', color: '#16a34a', fontSize: 14, fontWeight: '600', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginTop: 12, alignSelf: 'flex-start', overflow: 'hidden' },
+  priceInfo: { fontSize: 14, color: '#6366f1', fontWeight: '600', marginTop: 12 },
+  infoText: { fontSize: 13, color: '#94a3b8', marginTop: 16, lineHeight: 20 },
+  summaryCard: { backgroundColor: '#ffffff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#e2e8f0', marginTop: 20 },
+  summaryTitle: { fontSize: 18, fontWeight: '600', color: '#0f172a', marginBottom: 8 },
+  summaryPrice: { fontSize: 24, fontWeight: '700', color: '#6366f1' },
+  footer: { flexDirection: 'row', padding: 20, gap: 12, backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#e2e8f0' },
+  backButton: { flex: 1, backgroundColor: '#f1f5f9', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+  backButtonText: { fontSize: 16, fontWeight: '600', color: '#475569' },
+  nextButton: { flex: 2, backgroundColor: '#6366f1', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+  saveButton: { backgroundColor: '#16a34a' },
+  nextButtonText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
 });

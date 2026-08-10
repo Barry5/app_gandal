@@ -18,116 +18,52 @@ import type { Course, Enrollment } from '../types';
 
 const { width } = Dimensions.get('window');
 
-const MOCK_ENROLLED_COURSES: Enrollment[] = [
-  {
-    id: '1',
-    userId: '1',
-    courseId: '1',
-    status: 'paid',
-    amountPaid: 150000,
-    progressPercent: 68,
-    enrolledAt: '2024-01-15',
-    course: {
-      id: '1',
-      title: 'Marketing Digital pour PME',
-      slug: 'marketing-digital-pme',
-      priceCfa: 150000,
-      currency: 'GNF',
-      status: 'published',
-      difficulty: 'intermediate',
-      totalLessons: 12,
-      totalStudents: 45,
-      avgRating: 4.8,
-      creatorName: 'Mamadou Diallo',
-      thumbnailUrl: 'https://picsum.photos/seed/course1/400/225',
-    },
-  },
-  {
-    id: '2',
-    userId: '1',
-    courseId: '2',
-    status: 'paid',
-    amountPaid: 200000,
-    progressPercent: 35,
-    enrolledAt: '2024-02-01',
-    course: {
-      id: '2',
-      title: 'Initiation Python',
-      slug: 'initiation-python',
-      priceCfa: 200000,
-      currency: 'GNF',
-      status: 'published',
-      difficulty: 'beginner',
-      totalLessons: 15,
-      totalStudents: 32,
-      avgRating: 4.9,
-      creatorName: 'Ibrahim Sow',
-      thumbnailUrl: 'https://picsum.photos/seed/course2/400/225',
-    },
-  },
-];
-
-const MOCK_COURSES: Course[] = [
-  {
-    id: '3',
-    title: 'Gestion Financière pour Artisans',
-    slug: 'gestion-financiere',
-    priceCfa: 80000,
-    currency: 'GNF',
-    status: 'published',
-    difficulty: 'beginner',
-    totalLessons: 8,
-    totalStudents: 78,
-    avgRating: 4.7,
-    creatorName: 'Aminata Koné',
-    thumbnailUrl: 'https://picsum.photos/seed/course3/400/225',
-    shortDescription: 'Apprenez à gérer vos finances et augmenter vos revenus',
-  },
-  {
-    id: '4',
-    title: 'Réseaux Sociaux pour Débutants',
-    slug: 'reseaux-sociaux-debutants',
-    priceCfa: 0,
-    currency: 'GNF',
-    status: 'published',
-    difficulty: 'beginner',
-    totalLessons: 6,
-    totalStudents: 156,
-    avgRating: 4.6,
-    creatorName: 'Sékou Touré',
-    thumbnailUrl: 'https://picsum.photos/seed/course4/400/225',
-    shortDescription: 'Maîtrisez Facebook, WhatsApp et Instagram pour votre business',
-  },
-  {
-    id: '5',
-    title: ' Entrepreneuriat en Afrique',
-    slug: 'entrepreneuriat-afrique',
-    priceCfa: 120000,
-    currency: 'GNF',
-    status: 'published',
-    difficulty: 'intermediate',
-    totalLessons: 10,
-    totalStudents: 89,
-    avgRating: 4.9,
-    creatorName: 'Mariam Diallo',
-    thumbnailUrl: 'https://picsum.photos/seed/course5/400/225',
-    shortDescription: 'Construisez et faites grandir votre entreprise en Afrique',
-  },
-];
+type CatalogCourse = {
+  id: string;
+  title: string;
+  slug: string;
+  price_cfa: number;
+  currency: string;
+  total_lessons: number;
+  total_students: number;
+  avg_rating: number;
+  creator_name: string;
+  thumbnail_url?: string;
+  short_description?: string;
+  is_free: boolean;
+  is_unlocked: boolean;
+  enrollment_status?: string | null;
+  progress_percent?: number;
+};
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [catalogCourses, setCatalogCourses] = useState<CatalogCourse[]>([]);
 
-  const enrolledCourses = MOCK_ENROLLED_COURSES;
-  const continueLearning = enrolledCourses.find(e => e.progressPercent > 0 && e.progressPercent < 100);
-  const featuredCourses = MOCK_COURSES;
+  useEffect(() => {
+    loadCatalog();
+  }, []);
 
-  const onRefresh = () => {
+  const loadCatalog = async () => {
+    try {
+      const data = await courseService.getCatalog();
+      setCatalogCourses(data.courses || []);
+    } catch {
+      setCatalogCourses([]);
+    }
+  };
+
+  const enrolledCourses = catalogCourses.filter(c => c.enrollment_status === 'paid');
+  const continueLearning = enrolledCourses.find(c => (c.progress_percent || 0) > 0 && (c.progress_percent || 0) < 100);
+  const featuredCourses = catalogCourses.filter(c => !c.enrollment_status);
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
+    await loadCatalog();
+    setRefreshing(false);
   };
 
   return (
@@ -172,7 +108,7 @@ export default function HomeScreen() {
               onPress={() => navigation.navigate('Lesson')}
             >
               <Image
-                source={{ uri: continueLearning.course?.thumbnailUrl }}
+                source={{ uri: continueLearning.thumbnail_url }}
                 style={styles.continueImage}
               />
               <LinearGradient
@@ -181,13 +117,13 @@ export default function HomeScreen() {
               >
                 <View style={styles.continueContent}>
                   <Text style={styles.continueTitle} numberOfLines={1}>
-                    {continueLearning.course?.title}
+                    {continueLearning.title}
                   </Text>
                   <View style={styles.progressContainer}>
                     <View style={styles.progressBar}>
-                      <View style={[styles.progressFill, { width: `${continueLearning.progressPercent}%` }]} />
+                      <View style={[styles.progressFill, { width: `${continueLearning.progress_percent || 0}%` }]} />
                     </View>
-                    <Text style={styles.progressText}>{continueLearning.progressPercent}%</Text>
+                    <Text style={styles.progressText}>{continueLearning.progress_percent || 0}%</Text>
                   </View>
                   <View style={styles.continueButton}>
                     <Text style={styles.continueButtonText}>▶ Continuer</Text>
@@ -232,17 +168,17 @@ export default function HomeScreen() {
                 style={styles.courseCard}
                 onPress={() => navigation.navigate('CourseDetail', { courseId: course.id })}
               >
-                <Image source={{ uri: course.thumbnailUrl }} style={styles.courseImage} />
+                <Image source={{ uri: course.thumbnail_url }} style={styles.courseImage} />
                 <View style={styles.courseContent}>
                   <Text style={styles.courseTitle} numberOfLines={2}>{course.title}</Text>
-                  <Text style={styles.courseInstructor}>{course.creatorName}</Text>
+                  <Text style={styles.courseInstructor}>{course.creator_name}</Text>
                   <View style={styles.courseFooter}>
                     <View style={styles.ratingContainer}>
                       <Text style={styles.ratingIcon}>⭐</Text>
-                      <Text style={styles.ratingText}>{course.avgRating}</Text>
+                      <Text style={styles.ratingText}>{course.avg_rating}</Text>
                     </View>
                     <Text style={styles.coursePrice}>
-                      {course.priceCfa === 0 ? 'Gratuit' : `${course.priceCfa.toLocaleString()} GNF`}
+                      {course.price_cfa === 0 ? 'Gratuit' : `${course.price_cfa.toLocaleString()} GNF`}
                     </Text>
                   </View>
                 </View>

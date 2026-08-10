@@ -383,12 +383,57 @@ export const courseRatings = pgTable('course_ratings', {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export const pricingTiers = pgTable('pricing_tiers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  label: varchar('label', { length: 100 }).notNull().default('Standard'),
+  price: integer('price').notNull().default(0),
+  currency: varchar('currency', { length: 3 }).notNull().default('GNF'),
+  isActive: boolean('is_active').notNull().default(true),
+  validFrom: timestamp('valid_from'),
+  validTo: timestamp('valid_to'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('idx_pricing_tiers_course').on(table.courseId),
+  index('idx_pricing_tiers_active').on(table.isActive),
+]);
+
+export const coursePriceHistory = pgTable('course_price_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  oldPrice: integer('old_price').notNull().default(0),
+  newPrice: integer('new_price').notNull().default(0),
+  currency: varchar('currency', { length: 3 }).notNull().default('GNF'),
+  changedBy: uuid('changed_by').references(() => users.id, { onDelete: 'set null' }),
+  reason: varchar('reason', { length: 255 }),
+  enrolledStudentsAtChange: integer('enrolled_students_at_change').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  index('idx_price_history_course').on(table.courseId),
+  index('idx_price_history_created').on(table.createdAt),
+]);
+
+export const commissionRates = pgTable('commission_rates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  plan: creatorPlans('plan').notNull().unique(),
+  rate: integer('rate').notNull().default(10),
+  updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
 export type Module = typeof modules.$inferSelect;
 export type Lesson = typeof lessons.$inferSelect;
 export type Enrollment = typeof enrollments.$inferSelect;
 export type QuizQuestion = typeof quizQuestions.$inferSelect;
+export type PricingTier = typeof pricingTiers.$inferSelect;
+export type NewPricingTier = typeof pricingTiers.$inferInsert;
+export type CoursePriceHistory = typeof coursePriceHistory.$inferSelect;
+export type CommissionRate = typeof commissionRates.$inferSelect;
 
 export const badgeTypes = pgEnum('badge_types', [
   'first_lesson',

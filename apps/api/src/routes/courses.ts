@@ -455,6 +455,43 @@ export async function courseRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Course not found' });
       }
 
+      if (data.priceCfa !== undefined) {
+        const currentCourse = await fastify.pg.query(
+          'SELECT price_cfa FROM courses WHERE id = $1',
+          [id]
+        );
+        const currentPrice = Number(currentCourse.rows[0]?.price_cfa || 0);
+
+        if (Number(data.priceCfa) !== currentPrice) {
+          const enrolledCount = await fastify.pg.query(
+            "SELECT COUNT(*)::int AS count FROM enrollments WHERE course_id = $1 AND status = 'paid'",
+            [id]
+          );
+          const enrolledStudents = Number(enrolledCount.rows[0]?.count || 0);
+
+          if (enrolledStudents > 0 && Number(data.priceCfa) < currentPrice) {
+            return reply.status(400).send({
+              error: 'Impossible de baisser le prix',
+              details: [{ message: `${enrolledStudents} etudiant(s) deja inscrit(s). Contactez l administration pour deroger.` }],
+            });
+          }
+
+          await fastify.pg.query(
+            `INSERT INTO course_price_history (course_id, old_price, new_price, currency, changed_by, reason, enrolled_students_at_change)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+              id,
+              currentPrice,
+              Number(data.priceCfa),
+              data.priceCfa !== undefined ? 'GNF' : 'GNF',
+              user.id,
+              'Modification via API',
+              enrolledStudents,
+            ]
+          );
+        }
+      }
+
       const result = await fastify.pg.query(
         `UPDATE courses SET
           title = COALESCE($1, title),

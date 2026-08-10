@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: starter
     region: frankfurt
-    buildCommand: corepack enable && corepack prepare pnpm@8.15.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @savoir/shared build && pnpm --filter @savoir/api build
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @savoir/shared build && pnpm --filter @savoir/db build && pnpm --filter @savoir/api build
     startCommand: pnpm --filter @savoir/api start
     healthCheckPath: /api/health
     autoDeploy: true

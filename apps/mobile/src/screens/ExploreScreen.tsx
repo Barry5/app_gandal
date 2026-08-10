@@ -1,22 +1,71 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatList } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { courseService } from '../services/api';
 import type { Course } from '../types';
-
-const MOCK_COURSES: Course[] = [
-  { id: '1', title: 'Marketing Digital', slug: 'marketing', priceCfa: 150000, currency: 'GNF', status: 'published', difficulty: 'intermediate', totalLessons: 12, totalStudents: 45, avgRating: 4.8, creatorName: 'Mamadou Diallo', thumbnailUrl: 'https://picsum.photos/seed/c1/400/225' },
-  { id: '2', title: 'Python Avancé', slug: 'python', priceCfa: 200000, currency: 'GNF', status: 'published', difficulty: 'advanced', totalLessons: 20, totalStudents: 32, avgRating: 4.9, creatorName: 'Ibrahim Sow', thumbnailUrl: 'https://picsum.photos/seed/c2/400/225' },
-  { id: '3', title: 'Entrepreneuriat', slug: 'entrepreneuriat', priceCfa: 80000, currency: 'GNF', status: 'published', difficulty: 'beginner', totalLessons: 8, totalStudents: 78, avgRating: 4.7, creatorName: 'Aminata Koné', thumbnailUrl: 'https://picsum.photos/seed/c3/400/225' },
-  { id: '4', title: 'Réseaux Sociaux', slug: 'social', priceCfa: 0, currency: 'GNF', status: 'published', difficulty: 'beginner', totalLessons: 6, totalStudents: 156, avgRating: 4.6, creatorName: 'Sékou Touré', thumbnailUrl: 'https://picsum.photos/seed/c4/400/225' },
-];
 
 const CATEGORIES = ['Tous', 'Business', 'Tech', 'Marketing', 'Design', 'Langues', 'Agriculture'];
 const SORT_OPTIONS = ['Populaires', 'Récent', 'Prix croissant', 'Prix décroissant'];
 
+type CatalogCourse = {
+  id: string;
+  title: string;
+  slug: string;
+  price_cfa: number;
+  currency: string;
+  difficulty: string;
+  total_lessons: number;
+  total_students: number;
+  avg_rating: number;
+  creator_name: string;
+  thumbnail_url?: string;
+  category?: string;
+  is_free: boolean;
+};
+
 export default function ExploreScreen() {
   const navigation = useNavigation<any>();
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState('Tous');
+  const [courses, setCourses] = useState<CatalogCourse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Tous');
+
+  useEffect(() => {
+    loadCourses();
+  }, []);
+
+  const loadCourses = async () => {
+    try {
+      setIsLoading(true);
+      const data = await courseService.getCatalog();
+      setCourses(data.courses || []);
+    } catch {
+      setCourses([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredCourses = courses.filter((course) => {
+    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'Tous' || (course.category || '').toLowerCase() === selectedCategory.toLowerCase();
+    return matchesSearch && matchesCategory;
+  });
+
+  const mapToCourse = (item: CatalogCourse): Course => ({
+    id: item.id,
+    title: item.title,
+    slug: item.slug,
+    priceCfa: item.price_cfa,
+    currency: item.currency || 'GNF',
+    status: 'published',
+    difficulty: item.difficulty as Course['difficulty'],
+    totalLessons: item.total_lessons || 0,
+    totalStudents: item.total_students || 0,
+    avgRating: item.avg_rating || 0,
+    creatorName: item.creator_name || '',
+    thumbnailUrl: item.thumbnail_url,
+  });
 
   return (
     <View style={styles.container}>
@@ -50,36 +99,42 @@ export default function ExploreScreen() {
         </ScrollView>
       </View>
 
-      <FlatList
-        data={MOCK_COURSES}
-        numColumns={2}
-        contentContainerStyle={styles.courseGrid}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.courseCard}
-            onPress={() => navigation.navigate('CourseDetail', { courseId: item.id })}
-          >
-            <View style={styles.courseImageContainer}>
-              <View style={styles.courseImage} />
-              <View style={styles.priceTag}>
-                <Text style={styles.priceText}>
-                  {item.priceCfa === 0 ? 'Gratuit' : `${item.priceCfa.toLocaleString()} GNF`}
-                </Text>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6366f1" />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredCourses}
+          numColumns={2}
+          contentContainerStyle={styles.courseGrid}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.courseCard}
+              onPress={() => navigation.navigate('CourseDetail', { courseId: item.id })}
+            >
+              <View style={styles.courseImageContainer}>
+                <View style={styles.courseImage} />
+                <View style={styles.priceTag}>
+                  <Text style={styles.priceText}>
+                    {item.price_cfa === 0 ? 'Gratuit' : `${item.price_cfa.toLocaleString()} GNF`}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <View style={styles.courseInfo}>
-              <Text style={styles.courseTitle} numberOfLines={2}>{item.title}</Text>
-              <Text style={styles.courseInstructor}>{item.creatorName}</Text>
-              <View style={styles.courseMeta}>
-                <Text style={styles.metaText}>⭐ {item.avgRating}</Text>
-                <Text style={styles.metaText}>{item.totalLessons} leçons</Text>
+              <View style={styles.courseInfo}>
+                <Text style={styles.courseTitle} numberOfLines={2}>{item.title}</Text>
+                <Text style={styles.courseInstructor}>{item.creator_name}</Text>
+                <View style={styles.courseMeta}>
+                  <Text style={styles.metaText}>⭐ {item.avg_rating}</Text>
+                  <Text style={styles.metaText}>{item.total_lessons} leçons</Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        )}
-        ListFooterComponent={<View style={{ height: 120 }} />}
-      />
+            </TouchableOpacity>
+          )}
+          ListFooterComponent={<View style={{ height: 120 }} />}
+        />
+      )}
     </View>
   );
 }
@@ -96,6 +151,7 @@ const styles = StyleSheet.create({
   filterButtonActive: { backgroundColor: '#6366f1' },
   filterText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
   filterTextActive: { color: '#ffffff' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   courseGrid: { paddingHorizontal: 12, paddingTop: 8 },
   courseCard: { flex: 1, margin: 6, backgroundColor: '#ffffff', borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
   courseImageContainer: { height: 120, backgroundColor: '#e5e7eb', position: 'relative' },

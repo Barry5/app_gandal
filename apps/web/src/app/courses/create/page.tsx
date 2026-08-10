@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/DataDisplay';
+import { PriceInput } from '@/components/ui/PriceInput';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { courseApi, mediaApi, uploadFile, type CourseDetailDto, type CourseInput, type LessonDto, type LessonInput, type LessonType, type ModuleDto } from '@/lib/api';
 
@@ -587,15 +588,12 @@ export default function CourseCreatePage() {
                     </select>
                   </Field>
 
-                  <Field label="Prix GNF">
-                    <input
-                      type="number"
-                      min="0"
-                      value={courseForm.priceCfa}
-                      onChange={(event) => setCourseForm({ ...courseForm, priceCfa: Number(event.target.value || 0) })}
-                      className="field"
-                    />
-                  </Field>
+                  <PriceInput
+                    value={courseForm.priceCfa}
+                    onChange={(value) => setCourseForm({ ...courseForm, priceCfa: value })}
+                    label="Prix"
+                    hint="Mettre 0 pour un cours gratuit"
+                  />
                 </div>
 
                 <CoverUploader

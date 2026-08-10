@@ -21,6 +21,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardFooter } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/DataDisplay';
+import { PriceInput } from '@/components/ui/PriceInput';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { courseApi, type CourseDto, type CourseInput } from '@/lib/api';
 import { toast } from 'sonner';
@@ -537,16 +538,12 @@ function CourseModal({
             />
           </label>
 
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Prix (GNF)</span>
-            <input
-              type="number"
-              value={formData.priceCfa}
-              onChange={(event) => setFormData({ ...formData, priceCfa: parseInt(event.target.value) || 0 })}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700/50"
-              min="0"
-            />
-          </label>
+          <PriceInput
+            value={formData.priceCfa}
+            onChange={(value) => setFormData({ ...formData, priceCfa: value })}
+            label="Prix"
+            hint="Mettre 0 pour offrir le cours gratuitement"
+          />
 
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">URL de la miniature</span>

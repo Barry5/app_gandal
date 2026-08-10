@@ -13,6 +13,7 @@ import { mediaRoutes } from './routes/media.js';
 import { certificateRoutes } from './routes/certificates.js';
 import { gamificationRoutes } from './routes/gamification.js';
 import { aiRoutes } from './routes/ai.js';
+import { pricingRoutes } from './routes/pricing.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -46,8 +47,11 @@ function getPgPoolConfig(databaseUrl: string): pg.PoolConfig {
 async function start() {
   try {
     const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret && process.env.NODE_ENV === 'production') {
-      throw new Error('JWT_SECRET is required in production');
+    if (!jwtSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('JWT_SECRET is required in production');
+      }
+      throw new Error('JWT_SECRET is required. Set it in .env.local for development.');
     }
 
     const databaseUrl = process.env.DATABASE_URL;
@@ -78,7 +82,7 @@ async function start() {
     });
 
     await server.register(jwt, {
-      secret: jwtSecret || 'development-only-secret-change-me',
+      secret: jwtSecret,
     });
 
     await server.register(rateLimit, {
@@ -100,6 +104,7 @@ async function start() {
     server.register(certificateRoutes, { prefix: '/api/certificates' });
     server.register(gamificationRoutes, { prefix: '/api/gamification' });
     server.register(aiRoutes, { prefix: '/api/ai' });
+    server.register(pricingRoutes, { prefix: '/api/pricing' });
 
     server.get('/api/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 

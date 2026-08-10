@@ -67,6 +67,11 @@ export const courseService = {
     return response.data;
   },
 
+  getCatalog: async () => {
+    const response = await api.get('/courses/catalog');
+    return response.data;
+  },
+
   getById: async (id: string) => {
     const response = await api.get(`/courses/${id}`);
     return response.data;
@@ -126,6 +131,11 @@ export const courseService = {
     isFree?: boolean;
   }) => {
     const response = await api.post(`/modules/${moduleId}/lessons`, data);
+    return response.data;
+  },
+
+  enrollFree: async (courseId: string) => {
+    const response = await api.post(`/courses/${courseId}/enroll-free`);
     return response.data;
   },
 };

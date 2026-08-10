@@ -838,6 +838,103 @@ export async function saveCourse(courseData: CourseInput): Promise<{ success: bo
 }
 
 
+export type PricingTierDto = {
+  id: string;
+  course_id: string;
+  label: string;
+  price: number;
+  currency: string;
+  is_active: boolean;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PriceHistoryDto = {
+  id: string;
+  course_id: string;
+  old_price: number;
+  new_price: number;
+  currency: string;
+  changed_by?: string | null;
+  changed_by_name?: string | null;
+  reason?: string | null;
+  enrolled_students_at_change: number;
+  created_at: string;
+};
+
+export type CommissionRateDto = {
+  id: string;
+  plan: string;
+  rate: number;
+  updated_by?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const pricingApi = {
+  async listTiers(courseId: string): Promise<PricingTierDto[]> {
+    const payload = await apiRequest<{ tiers: PricingTierDto[] }>(`/pricing/${courseId}/tiers`);
+    return payload.tiers;
+  },
+
+  async createTier(courseId: string, data: {
+    label?: string;
+    price: number;
+    currency?: string;
+    isActive?: boolean;
+    validFrom?: string;
+    validTo?: string;
+    sortOrder?: number;
+  }): Promise<PricingTierDto> {
+    const payload = await apiRequest<{ tier: PricingTierDto }>(`/pricing/${courseId}/tiers`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return payload.tier;
+  },
+
+  async updateTier(courseId: string, tierId: string, data: Partial<{
+    label: string;
+    price: number;
+    currency: string;
+    isActive: boolean;
+    validFrom: string;
+    validTo: string;
+    sortOrder: number;
+  }>): Promise<PricingTierDto> {
+    const payload = await apiRequest<{ tier: PricingTierDto }>(`/pricing/${courseId}/tiers/${tierId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return payload.tier;
+  },
+
+  async deleteTier(courseId: string, tierId: string): Promise<void> {
+    await apiRequest(`/pricing/${courseId}/tiers/${tierId}`, { method: 'DELETE' });
+  },
+
+  async getHistory(courseId: string): Promise<PriceHistoryDto[]> {
+    const payload = await apiRequest<{ history: PriceHistoryDto[] }>(`/pricing/${courseId}/history`);
+    return payload.history;
+  },
+
+  async getCommissionRates(): Promise<CommissionRateDto[]> {
+    const payload = await apiRequest<{ rates: CommissionRateDto[] }>('/pricing/commission-rates');
+    return payload.rates;
+  },
+
+  async updateCommissionRate(plan: string, rate: number): Promise<CommissionRateDto> {
+    const payload = await apiRequest<{ rate: CommissionRateDto }>(`/pricing/commission-rates/${plan}`, {
+      method: 'PUT',
+      body: JSON.stringify({ rate }),
+    });
+    return payload.rate;
+  },
+};
+
 export const adminApi = {
   async listCreators(params: { status?: 'all' | 'active' | 'blocked'; search?: string; page?: number; limit?: number } = {}): Promise<{
     creators: AdminCreatorDto[];
