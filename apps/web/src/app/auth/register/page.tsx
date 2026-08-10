@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, BookOpen, Check, Eye, EyeOff, GraduationCap, Lock, Mail, Phone, User, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Eye, EyeOff, GraduationCap, LineChart, Lock, Mail, MonitorSmartphone, Phone, Quote, Sparkles, User, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -11,20 +11,6 @@ import { Badge } from '@/components/ui/DataDisplay';
 import { Input } from '@/components/ui/Input';
 import { Tabs } from '@/components/ui/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
-
-const creatorHighlights = [
-  'Créer et publier vos cours',
-  'Suivre vos élèves',
-  'Vendre en monnaie locale',
-  'Préparer vos certificats',
-];
-
-const learnerHighlights = [
-  'Accéder aux formations',
-  'Suivre votre progression',
-  'Apprendre sur mobile',
-  'Obtenir des certificats',
-];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -43,8 +29,6 @@ export default function RegisterPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
-
-  const highlights = accountType === 'creator' ? creatorHighlights : learnerHighlights;
   const passwordStrength = useMemo(() => {
     let score = 0;
     if (formData.password.length >= 8) score += 1;
@@ -94,7 +78,7 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
       <div className="mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 lg:grid-cols-[0.9fr_1.1fr]">
-        <section className="hidden border-r border-slate-200 bg-white px-10 py-10 dark:border-slate-800 dark:bg-slate-900 lg:flex lg:flex-col">
+        <section className="hidden overflow-y-auto border-r border-slate-200 bg-white px-10 py-10 dark:border-slate-800 dark:bg-slate-900 lg:flex lg:flex-col">
           <Link href="/" className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white">
               <BookOpen className="h-6 w-6" />
@@ -102,25 +86,108 @@ export default function RegisterPage() {
             <span className="text-xl font-semibold">Savoir-App</span>
           </Link>
 
-          <div className="flex flex-1 flex-col justify-center">
-            <Badge variant="subtle" className="mb-5 w-fit">Configuration en moins de 2 minutes</Badge>
-            <h1 className="max-w-xl text-5xl font-bold leading-tight tracking-normal">
-              Créez un espace prêt pour vendre, apprendre et suivre la progression.
+          <div className="flex flex-1 flex-col justify-center py-8">
+            <Badge variant="subtle" className="mb-6 w-fit">
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              La nouvelle façon de transmettre le savoir
+            </Badge>
+
+            <h1 className="max-w-xl text-4xl font-bold leading-tight tracking-tight xl:text-5xl">
+              Apprenez. Créez.{' '}
+              <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-violet-400">
+                Évoluez.
+              </span>
             </h1>
-            <p className="mt-6 max-w-lg text-lg leading-8 text-slate-600 dark:text-slate-300">
-              Une inscription claire, reliée à l&apos;API et à PostgreSQL Supabase, pour démarrer sur une base solide.
+            <p className="mt-4 max-w-lg text-lg font-medium leading-8 text-slate-900 dark:text-white">
+              La nouvelle façon d&apos;apprendre et de transmettre en ligne.
+            </p>
+            <p className="mt-2 max-w-lg text-base leading-7 text-slate-600 dark:text-slate-300">
+              Une plateforme moderne qui réunit formateurs et apprenants dans un même espace pour créer, suivre et réussir
+              des formations en ligne.
             </p>
 
-            <div className="mt-10 grid gap-3">
-              {highlights.map((item) => (
-                <div key={item} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                    <Check className="h-4 w-4" />
-                  </span>
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{item}</span>
-                </div>
-              ))}
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
+                  <GraduationCap className="h-5 w-5" />
+                </span>
+                <h3 className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">Pour les formateurs</h3>
+                <p className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  Transformez votre expertise en formations structurées, accompagnez vos apprenants et suivez leurs
+                  performances.
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  <Users className="h-5 w-5" />
+                </span>
+                <h3 className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">Pour les apprenants</h3>
+                <p className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  Accédez à des formations de qualité, apprenez à votre rythme et visualisez votre progression à chaque
+                  étape.
+                </p>
+              </div>
             </div>
+
+            <div className="mt-9">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Tout ce dont vous avez besoin pour apprendre mieux.
+              </h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
+                    <BookOpen className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Cours structurés</p>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      Organisez contenus, modules, leçons et ressources dans une expérience claire.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
+                    <LineChart className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Suivi intelligent</p>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      Visualisez la progression, les résultats et les objectifs de chaque apprenant.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
+                    <Sparkles className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Espace personnalisé</p>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      Chaque utilisateur dispose d&apos;un environnement adapté à son rôle et à ses besoins.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
+                    <MonitorSmartphone className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Accessible partout</p>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      Apprenez et enseignez depuis votre ordinateur, tablette ou smartphone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <blockquote className="mt-9 rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-700 p-6 text-white dark:from-indigo-500 dark:to-violet-600">
+              <Quote className="h-6 w-6 opacity-50" />
+              <p className="mt-3 text-lg font-semibold leading-7">Votre savoir mérite une plateforme à sa hauteur.</p>
+              <p className="mt-2 text-sm italic leading-6 text-indigo-100">
+                « Le savoir se partage. Les compétences se construisent. »
+              </p>
+            </blockquote>
           </div>
         </section>
 
