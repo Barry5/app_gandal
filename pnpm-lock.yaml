@@ -202,11 +202,14 @@ importers:
         version: 16.4.7
       drizzle-orm:
         specifier: ^0.30.0
-        version: 0.30.10(pg@8.20.0)
+        version: 0.30.10(@types/pg@8.20.0)(pg@8.20.0)
       pg:
         specifier: ^8.11.0
         version: 8.20.0
     devDependencies:
+      '@types/pg':
+        specifier: ^8.11.0
+        version: 8.20.0
       drizzle-kit:
         specifier: ^0.21.0
         version: 0.21.4
@@ -3778,7 +3781,6 @@ packages:
       '@types/node': 20.19.41
       pg-protocol: 1.13.0
       pg-types: 2.2.0
-    dev: true
 
   /@types/react-dom@19.2.3(@types/react@19.1.17):
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
@@ -5281,7 +5283,7 @@ packages:
       - supports-color
     dev: true
 
-  /drizzle-orm@0.30.10(pg@8.20.0):
+  /drizzle-orm@0.30.10(@types/pg@8.20.0)(pg@8.20.0):
     resolution: {integrity: sha512-IRy/QmMWw9lAQHpwbUh1b8fcn27S/a9zMIzqea1WNOxK9/4EB8gIo+FZWLiPXzl2n9ixGSv8BhsLZiOppWEwBw==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
@@ -5361,6 +5363,7 @@ packages:
       sqlite3:
         optional: true
     dependencies:
+      '@types/pg': 8.20.0
       pg: 8.20.0
     dev: false
 

@@ -23,10 +23,10 @@ export const users = pgTable('users', {
   lastLoginAt: timestamp('last_login_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_users_email').on(table.email),
-  index('idx_users_phone').on(table.phone),
-]);
+}, (table) => ({
+  idx_users_email: index('idx_users_email').on(table.email),
+  idx_users_phone: index('idx_users_phone').on(table.phone),
+}));
 
 export const creators = pgTable('creators', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -93,12 +93,12 @@ export const courses = pgTable('courses', {
   publishedAt: timestamp('published_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_courses_creator').on(table.creatorId),
-  index('idx_courses_status').on(table.status),
-  index('idx_courses_slug').on(table.slug),
-  unique('uniq_courses_slug').on(table.slug),
-]);
+}, (table) => ({
+  idx_courses_creator: index('idx_courses_creator').on(table.creatorId),
+  idx_courses_status: index('idx_courses_status').on(table.status),
+  idx_courses_slug: index('idx_courses_slug').on(table.slug),
+  uniq_courses_slug: unique('uniq_courses_slug').on(table.slug),
+}));
 
 export const modules = pgTable('modules', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -112,9 +112,9 @@ export const modules = pgTable('modules', {
   totalDurationSec: integer('total_duration_sec').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_modules_course').on(table.courseId),
-]);
+}, (table) => ({
+  idx_modules_course: index('idx_modules_course').on(table.courseId),
+}));
 
 export const lessons = pgTable('lessons', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -143,9 +143,9 @@ export const lessons = pgTable('lessons', {
   viewCount: integer('view_count').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_lessons_module').on(table.moduleId),
-]);
+}, (table) => ({
+  idx_lessons_module: index('idx_lessons_module').on(table.moduleId),
+}));
 
 export const quizQuestions = pgTable('quiz_questions', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -176,12 +176,12 @@ export const enrollments = pgTable('enrollments', {
   completedAt: timestamp('completed_at'),
   enrolledAt: timestamp('enrolled_at').notNull().defaultNow(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_enrollments_user').on(table.userId),
-  index('idx_enrollments_course').on(table.courseId),
-  index('idx_enrollments_status').on(table.status),
-  unique('uniq_enrollments_user_course').on(table.userId, table.courseId),
-]);
+}, (table) => ({
+  idx_enrollments_user: index('idx_enrollments_user').on(table.userId),
+  idx_enrollments_course: index('idx_enrollments_course').on(table.courseId),
+  idx_enrollments_status: index('idx_enrollments_status').on(table.status),
+  uniq_enrollments_user_course: unique('uniq_enrollments_user_course').on(table.userId, table.courseId),
+}));
 
 export const courseAccessCodes = pgTable('course_access_codes', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -199,11 +199,11 @@ export const courseAccessCodes = pgTable('course_access_codes', {
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_access_codes_course').on(table.courseId),
-  index('idx_access_codes_status').on(table.status),
-  index('idx_access_codes_hash').on(table.codeHash),
-]);
+}, (table) => ({
+  idx_access_codes_course: index('idx_access_codes_course').on(table.courseId),
+  idx_access_codes_status: index('idx_access_codes_status').on(table.status),
+  idx_access_codes_hash: index('idx_access_codes_hash').on(table.codeHash),
+}));
 
 export const courseAccessCodeAttempts = pgTable('course_access_code_attempts', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -214,10 +214,10 @@ export const courseAccessCodeAttempts = pgTable('course_access_code_attempts', {
   success: boolean('success').notNull().default(false),
   ipAddress: varchar('ip_address', { length: 50 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_access_code_attempts_user_course').on(table.userId, table.courseId),
-  index('idx_access_code_attempts_created').on(table.createdAt),
-]);
+}, (table) => ({
+  idx_access_code_attempts_user_course: index('idx_access_code_attempts_user_course').on(table.userId, table.courseId),
+  idx_access_code_attempts_created: index('idx_access_code_attempts_created').on(table.createdAt),
+}));
 
 export const lessonProgress = pgTable('lesson_progress', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -231,11 +231,11 @@ export const lessonProgress = pgTable('lesson_progress', {
   lastWatchedAt: timestamp('last_watched_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_progress_user').on(table.userId),
-  index('idx_progress_lesson').on(table.lessonId),
-  unique('uniq_progress_user_lesson').on(table.userId, table.lessonId),
-]);
+}, (table) => ({
+  idx_progress_user: index('idx_progress_user').on(table.userId),
+  idx_progress_lesson: index('idx_progress_lesson').on(table.lessonId),
+  uniq_progress_user_lesson: unique('uniq_progress_user_lesson').on(table.userId, table.lessonId),
+}));
 
 export const quizAttempts = pgTable('quiz_attempts', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -278,10 +278,10 @@ export const discussions = pgTable('discussions', {
   isResolved: boolean('is_resolved').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_discussions_lesson').on(table.lessonId),
-  index('idx_discussions_user').on(table.userId),
-]);
+}, (table) => ({
+  idx_discussions_lesson: index('idx_discussions_lesson').on(table.lessonId),
+  idx_discussions_user: index('idx_discussions_user').on(table.userId),
+}));
 
 export const notifications = pgTable('notifications', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -293,10 +293,10 @@ export const notifications = pgTable('notifications', {
   isRead: boolean('is_read').notNull().default(false),
   readAt: timestamp('read_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_notifications_user').on(table.userId),
-  index('idx_notifications_read').on(table.isRead),
-]);
+}, (table) => ({
+  idx_notifications_user: index('idx_notifications_user').on(table.userId),
+  idx_notifications_read: index('idx_notifications_read').on(table.isRead),
+}));
 
 export const adminActivityLogs = pgTable('admin_activity_logs', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -306,11 +306,11 @@ export const adminActivityLogs = pgTable('admin_activity_logs', {
   reason: text('reason'),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_admin_activity_actor').on(table.actorUserId),
-  index('idx_admin_activity_target').on(table.targetUserId),
-  index('idx_admin_activity_created').on(table.createdAt),
-]);
+}, (table) => ({
+  idx_admin_activity_actor: index('idx_admin_activity_actor').on(table.actorUserId),
+  idx_admin_activity_target: index('idx_admin_activity_target').on(table.targetUserId),
+  idx_admin_activity_created: index('idx_admin_activity_created').on(table.createdAt),
+}));
 
 export const sessions = pgTable('sessions', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -347,11 +347,11 @@ export const payments = pgTable('payments', {
   metadata: jsonb('metadata'),
   completedAt: timestamp('completed_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_payments_user').on(table.userId),
-  index('idx_payments_course').on(table.courseId),
-  index('idx_payments_provider_ref').on(table.providerRef),
-]);
+}, (table) => ({
+  idx_payments_user: index('idx_payments_user').on(table.userId),
+  idx_payments_course: index('idx_payments_course').on(table.courseId),
+  idx_payments_provider_ref: index('idx_payments_provider_ref').on(table.providerRef),
+}));
 
 export const aiConversations = pgTable('ai_conversations', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -365,9 +365,9 @@ export const aiConversations = pgTable('ai_conversations', {
   context: text('context'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_ai_conversations_user').on(table.userId),
-]);
+}, (table) => ({
+  idx_ai_conversations_user: index('idx_ai_conversations_user').on(table.userId),
+}));
 
 export const courseRatings = pgTable('course_ratings', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -376,10 +376,10 @@ export const courseRatings = pgTable('course_ratings', {
   rating: integer('rating').notNull(),
   review: text('review'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_ratings_course').on(table.courseId),
-  unique('uniq_ratings_user_course').on(table.userId, table.courseId),
-]);
+}, (table) => ({
+  idx_ratings_course: index('idx_ratings_course').on(table.courseId),
+  uniq_ratings_user_course: unique('uniq_ratings_user_course').on(table.userId, table.courseId),
+}));
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -395,10 +395,10 @@ export const pricingTiers = pgTable('pricing_tiers', {
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_pricing_tiers_course').on(table.courseId),
-  index('idx_pricing_tiers_active').on(table.isActive),
-]);
+}, (table) => ({
+  idx_pricing_tiers_course: index('idx_pricing_tiers_course').on(table.courseId),
+  idx_pricing_tiers_active: index('idx_pricing_tiers_active').on(table.isActive),
+}));
 
 export const coursePriceHistory = pgTable('course_price_history', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -410,10 +410,10 @@ export const coursePriceHistory = pgTable('course_price_history', {
   reason: varchar('reason', { length: 255 }),
   enrolledStudentsAtChange: integer('enrolled_students_at_change').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_price_history_course').on(table.courseId),
-  index('idx_price_history_created').on(table.createdAt),
-]);
+}, (table) => ({
+  idx_price_history_course: index('idx_price_history_course').on(table.courseId),
+  idx_price_history_created: index('idx_price_history_created').on(table.createdAt),
+}));
 
 export const commissionRates = pgTable('commission_rates', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -516,11 +516,11 @@ export const userProgress = pgTable('user_progress', {
   lastActivityAt: timestamp('last_activity_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_user_progress_user').on(table.userId),
-  index('idx_user_progress_total_xp').on(table.totalXp),
-  index('idx_user_progress_level').on(table.currentLevel),
-]);
+}, (table) => ({
+  idx_user_progress_user: index('idx_user_progress_user').on(table.userId),
+  idx_user_progress_total_xp: index('idx_user_progress_total_xp').on(table.totalXp),
+  idx_user_progress_level: index('idx_user_progress_level').on(table.currentLevel),
+}));
 
 export const userBadges = pgTable('user_badges', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -528,10 +528,10 @@ export const userBadges = pgTable('user_badges', {
   badgeId: uuid('badge_id').references(() => badges.id, { onDelete: 'cascade' }).notNull(),
   earnedAt: timestamp('earned_at').notNull().defaultNow(),
   progress: integer('progress').notNull().default(0),
-}, (table) => [
-  index('idx_user_badges_user').on(table.userId),
-  unique('uniq_user_badge').on(table.userId, table.badgeId),
-]);
+}, (table) => ({
+  idx_user_badges_user: index('idx_user_badges_user').on(table.userId),
+  uniq_user_badge: unique('uniq_user_badge').on(table.userId, table.badgeId),
+}));
 
 export const challenges = pgTable('challenges', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -547,10 +547,10 @@ export const challenges = pgTable('challenges', {
   rewardBadgeId: uuid('reward_badge_id').references(() => badges.id),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_challenges_type').on(table.type),
-  index('idx_challenges_dates').on(table.startDate, table.endDate),
-]);
+}, (table) => ({
+  idx_challenges_type: index('idx_challenges_type').on(table.type),
+  idx_challenges_dates: index('idx_challenges_dates').on(table.startDate, table.endDate),
+}));
 
 export const userChallengeProgress = pgTable('user_challenge_progress', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -562,11 +562,11 @@ export const userChallengeProgress = pgTable('user_challenge_progress', {
   completedAt: timestamp('completed_at'),
   rewardedAt: timestamp('rewarded_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_user_challenge_user').on(table.userId),
-  index('idx_user_challenge_challenge').on(table.challengeId),
-  unique('uniq_user_challenge').on(table.userId, table.challengeId),
-]);
+}, (table) => ({
+  idx_user_challenge_user: index('idx_user_challenge_user').on(table.userId),
+  idx_user_challenge_challenge: index('idx_user_challenge_challenge').on(table.challengeId),
+  uniq_user_challenge: unique('uniq_user_challenge').on(table.userId, table.challengeId),
+}));
 
 export const xpTransactions = pgTable('xp_transactions', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -577,10 +577,10 @@ export const xpTransactions = pgTable('xp_transactions', {
   sourceId: uuid('source_id'),
   description: varchar('description', { length: 255 }).notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_xp_transactions_user').on(table.userId),
-  index('idx_xp_transactions_created').on(table.createdAt),
-]);
+}, (table) => ({
+  idx_xp_transactions_user: index('idx_xp_transactions_user').on(table.userId),
+  idx_xp_transactions_created: index('idx_xp_transactions_created').on(table.createdAt),
+}));
 
 export const leaderboard = pgTable('leaderboard', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -591,11 +591,11 @@ export const leaderboard = pgTable('leaderboard', {
   weeklyXp: integer('weekly_xp').notNull().default(0),
   weeklyRank: integer('weekly_rank').notNull().default(0),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_leaderboard_total_xp').on(table.totalXp),
-  index('idx_leaderboard_rank').on(table.rank),
-  index('idx_leaderboard_weekly').on(table.weeklyXp),
-]);
+}, (table) => ({
+  idx_leaderboard_total_xp: index('idx_leaderboard_total_xp').on(table.totalXp),
+  idx_leaderboard_rank: index('idx_leaderboard_rank').on(table.rank),
+  idx_leaderboard_weekly: index('idx_leaderboard_weekly').on(table.weeklyXp),
+}));
 
 export const dailyRewards = pgTable('daily_rewards', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -611,11 +611,11 @@ export const userDailyLogins = pgTable('user_daily_logins', {
   loginDate: timestamp('login_date').notNull(),
   streakCount: integer('streak_count').notNull().default(1),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => [
-  index('idx_user_daily_login_user').on(table.userId),
-  index('idx_user_daily_login_date').on(table.loginDate),
-  unique('uniq_user_login_date').on(table.userId, table.loginDate),
-]);
+}, (table) => ({
+  idx_user_daily_login_user: index('idx_user_daily_login_user').on(table.userId),
+  idx_user_daily_login_date: index('idx_user_daily_login_date').on(table.loginDate),
+  uniq_user_login_date: unique('uniq_user_login_date').on(table.userId, table.loginDate),
+}));
 
 export type Badge = typeof badges.$inferSelect;
 export type UserProgress = typeof userProgress.$inferSelect;
