@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import crypto from 'node:crypto';
 import { slugify } from '@savoir/shared';
+import { getCommissionRate } from './finances.js';
 
 type AuthUser = {
   id: string;
@@ -603,7 +604,7 @@ export async function courseRoutes(fastify: FastifyInstance) {
       }
 
       const result = await fastify.pg.query(
-        `SELECT ac.id,
+`SELECT ac.id,
                 ac.status,
                 ac.max_uses,
                 ac.used_count,
@@ -611,6 +612,11 @@ export async function courseRoutes(fastify: FastifyInstance) {
                 ac.expires_at,
                 ac.created_at,
                 ac.payment_ref,
+                ac.price_at_generation,
+                ac.gross_amount,
+                ac.platform_commission,
+                ac.trainer_amount,
+                ac.commission_rate,
                 u.name AS used_by_name
          FROM course_access_codes ac
          LEFT JOIN users u ON u.id = ac.used_by
@@ -642,8 +648,8 @@ export async function courseRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Cours introuvable' });
       }
 
-      const courseResult = await fastify.pg.query(
-        `SELECT id, price_cfa, status FROM courses WHERE id = $1`,
+const courseResult = await fastify.pg.query(
+        `SELECT id, title, price_cfa, currency, status, creator_id FROM courses WHERE id = $1`,
         [courseId]
       );
       const course = courseResult.rows[0];
@@ -656,6 +662,11 @@ export async function courseRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Les cours gratuits ne necessitent pas de code.' });
       }
 
+      const grossAmount = Number(course.price_cfa || 0);
+      const commissionRate = await getCommissionRate(fastify, course.creator_id);
+      const platformCommission = Math.round((grossAmount * commissionRate) / 100);
+      const trainerAmount = grossAmount - platformCommission;
+
       let code = generateAccessCode();
       let codeHash = hashAccessCode(code);
       for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -667,16 +678,22 @@ export async function courseRoutes(fastify: FastifyInstance) {
 
       const paymentRef = `OFFLINE-${courseId.slice(0, 8)}-${crypto.randomUUID().slice(0, 8)}`.toUpperCase();
       const result = await fastify.pg.query(
-        `INSERT INTO course_access_codes (course_id, creator_id, generated_by, code_hash, status, max_uses, expires_at, payment_ref)
-         VALUES ($1, $2, $3, $4, 'active', $5, NOW() + ($6 || ' days')::interval, $7)
-         RETURNING id, status, max_uses, used_count, used_at, expires_at, created_at, payment_ref`,
-        [courseId, user.creatorId || null, user.id, codeHash, data.maxUses, data.expiresInDays, paymentRef]
+        `INSERT INTO course_access_codes (course_id, creator_id, generated_by, code_hash, status, max_uses, expires_at, payment_ref, price_at_generation, gross_amount, platform_commission, trainer_amount, commission_rate)
+         VALUES ($1, $2, $3, $4, 'active', $5, NOW() + ($6 || ' days')::interval, $7, $8, $9, $10, $11, $12)
+         RETURNING id, status, max_uses, used_count, used_at, expires_at, created_at, payment_ref, price_at_generation, gross_amount, platform_commission, trainer_amount, commission_rate`,
+        [courseId, user.creatorId || null, user.id, codeHash, data.maxUses, data.expiresInDays, paymentRef, grossAmount, grossAmount, platformCommission, trainerAmount, commissionRate]
       );
 
       return reply.status(201).send({
         accessCode: {
           ...result.rows[0],
           code,
+        },
+        commissionBreakdown: {
+          grossAmount,
+          commissionRate,
+          platformCommission,
+          trainerAmount,
         },
       });
     } catch (error) {
@@ -747,8 +764,8 @@ export async function courseRoutes(fastify: FastifyInstance) {
 
       await fastify.pg.query('BEGIN');
       try {
-        const lockedResult = await fastify.pg.query(
-          `SELECT ac.*, c.price_cfa, c.currency, c.status AS course_status, c.is_public
+const lockedResult = await fastify.pg.query(
+          `SELECT ac.*, c.title, c.price_cfa, c.currency, c.status AS course_status, c.is_public
            FROM course_access_codes ac
            JOIN courses c ON c.id = ac.course_id
            WHERE ac.id = $1
@@ -793,7 +810,7 @@ export async function courseRoutes(fastify: FastifyInstance) {
             lockedAccessCode.currency || 'GNF',
             paymentRef,
             JSON.stringify({ accessCodeId: lockedAccessCode.id, redeemedAt: new Date().toISOString() }),
-          ]
+]
         );
 
         await fastify.pg.query(
@@ -809,6 +826,22 @@ export async function courseRoutes(fastify: FastifyInstance) {
             JSON.stringify({ accessCodeId: lockedAccessCode.id, source: 'creator_offline_code' }),
           ]
         );
+
+        const grossAmount = Number(lockedAccessCode.gross_amount) || Number(lockedAccessCode.price_cfa || 0);
+        const commissionRate = Number(lockedAccessCode.commission_rate) || 10;
+        const platformCommission = Number(lockedAccessCode.platform_commission)
+          || Math.round((grossAmount * commissionRate) / 100);
+        const trainerAmount = Number(lockedAccessCode.trainer_amount)
+          || (grossAmount - platformCommission);
+
+        const trainerResult = await fastify.pg.query(
+          `SELECT cr.user_id AS trainer_id
+           FROM courses c
+           JOIN creators cr ON cr.id = c.creator_id
+           WHERE c.id = $1`,
+          [courseId]
+        );
+        const trainerId = trainerResult.rows[0]?.trainer_id || null;
 
         await fastify.pg.query(
           `UPDATE course_access_codes
@@ -834,10 +867,83 @@ export async function courseRoutes(fastify: FastifyInstance) {
           [courseId]
         );
 
+        let activationId: string | undefined;
+
+        if (trainerId) {
+          const activationResult = await fastify.pg.query(
+            `INSERT INTO course_activations
+               (course_id, student_id, trainer_id, course_snapshot, price_at_activation, currency,
+                payment_method, payment_reference, gross_amount, platform_commission, trainer_amount,
+                commission_rate, payment_submission_id, status, activated_by, events)
+             VALUES ($1, $2, $3, $4, $5, $6, 'cash', $7, $8, $9, $10, $11, NULL, 'ACTIVATED', $12, $13)
+             RETURNING id`,
+            [
+              courseId,
+              user.id,
+              trainerId,
+              JSON.stringify({ title: lockedAccessCode.title, priceCfa: grossAmount, currency: lockedAccessCode.currency || 'GNF' }),
+              grossAmount,
+              lockedAccessCode.currency || 'GNF',
+              paymentRef,
+              grossAmount,
+              platformCommission,
+              trainerAmount,
+              commissionRate,
+              user.id,
+              JSON.stringify([
+                {
+                  type: 'CODE_REDEEMED',
+                  at: new Date().toISOString(),
+                  by: user.id,
+                },
+                {
+                  type: 'ACTIVATED',
+                  at: new Date().toISOString(),
+                  by: user.id,
+                },
+              ]),
+            ]
+          );
+
+          activationId = activationResult.rows[0].id;
+
+          await fastify.pg.query(
+            `INSERT INTO financial_transactions
+               (activation_id, course_id, trainer_id, student_id, gross_amount, platform_commission,
+                trainer_amount, currency, payment_method, payment_reference, commission_rate, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'cash', $9, $10, 'DUE')`,
+            [
+              activationId,
+              courseId,
+              trainerId,
+              user.id,
+              grossAmount,
+              platformCommission,
+              trainerAmount,
+              lockedAccessCode.currency || 'GNF',
+              paymentRef,
+              commissionRate,
+            ]
+          );
+
+          await fastify.pg.query(
+            `INSERT INTO notifications (user_id, type, title, message, data)
+             VALUES ($1, 'payment', 'Nouvelle vente', 'Votre cours a ete active pour un nouvel apprenant via un code.', $2)`,
+            [
+              trainerId,
+              JSON.stringify({ courseId, activationId, amount: trainerAmount }),
+            ]
+          );
+        }
+
         await fastify.pg.query('COMMIT');
         return reply.send({
           message: 'Code valide. Cours deverrouille.',
           enrollmentId: enrollmentResult.rows[0].id,
+          activationId,
+          grossAmount,
+          platformCommission,
+          trainerAmount,
         });
       } catch (error) {
         await fastify.pg.query('ROLLBACK');

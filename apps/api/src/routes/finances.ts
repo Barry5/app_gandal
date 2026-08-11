@@ -49,7 +49,7 @@ async function requireAdmin(request: FastifyRequest, reply: FastifyReply): Promi
   return tokenUser;
 }
 
-async function getCommissionRate(fastify: FastifyInstance, creatorId: string): Promise<number> {
+export async function getCommissionRate(fastify: FastifyInstance, creatorId: string): Promise<number> {
   const result = await fastify.pg.query(
     `SELECT COALESCE(cr.rate, c.commission_rate) AS rate
      FROM creators c
