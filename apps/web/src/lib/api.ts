@@ -233,13 +233,16 @@ export async function uploadFile(
           const detailMessage = Array.isArray(payload.details)
             ? payload.details.map((item) => item.message).filter(Boolean).join(' | ')
             : payload.details;
-          if (xhr.status === 401 || xhr.status === 403) {
+          if (xhr.status === 401) {
             localStorage.removeItem('savoir_token');
             localStorage.removeItem('savoir_user');
+            if (!window.location.pathname.startsWith('/auth/login')) {
+              window.location.assign('/auth/login');
+            }
           }
           resolve({ 
             success: false, 
-            error: payload.error || detailMessage || (xhr.status === 401 || xhr.status === 403 ? 'Session expiree. Connectez-vous avec un compte formateur.' : 'Erreur lors de l\'upload')
+            error: payload.error || detailMessage || (xhr.status === 401 ? 'Session expiree. Connectez-vous avec un compte formateur.' : 'Erreur lors de l\'upload')
           });
         }
       });
@@ -604,10 +607,16 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       localStorage.removeItem('savoir_token');
       localStorage.removeItem('savoir_user');
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth/login')) {
+        window.location.assign('/auth/login');
+      }
       throw new Error('Session expiree. Connectez-vous a votre compte.');
+    }
+    if (response.status === 403) {
+      throw new Error(getApiErrorMessage(payload));
     }
     throw new Error(getApiErrorMessage(payload));
   }
