@@ -1178,3 +1178,38 @@ export const adminApi = {
     });
   },
 };
+
+export type GamificationBadgeDto = {
+  id: string;
+  type: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  xp_reward: number;
+  rarity: string;
+  earned_at?: string | null;
+  progress?: number | null;
+};
+
+export type GamificationProfileDto = {
+  progress: {
+    total_xp: number;
+    current_level: number;
+    levelInfo: { level: number; title: string };
+    progressPercent: number;
+    xpToNextLevel: number;
+  };
+  badges: GamificationBadgeDto[];
+};
+
+export const gamificationApi = {
+  async profile(): Promise<GamificationProfileDto> {
+    return apiRequest('/gamification/profile');
+  },
+
+  async allBadges(): Promise<GamificationBadgeDto[]> {
+    const payload = await apiRequest<{ badges: GamificationBadgeDto[] }>('/gamification/badges');
+    return payload.badges;
+  },
+};

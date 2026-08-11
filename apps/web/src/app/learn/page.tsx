@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge, Avatar, StatsCard } from '@/components/ui/DataDisplay';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { courseApi, type CatalogCourseDto } from '@/lib/api';
+import { courseApi, gamificationApi, type CatalogCourseDto, type GamificationBadgeDto } from '@/lib/api';
 import { toast } from 'sonner';
 
 const courseFallbackImage =
@@ -46,14 +46,6 @@ function formatDuration(hours: number) {
   if (!hours) return 'A votre rythme';
   return `${hours} h`;
 }
-
-const achievements = [
-  { id: '1', title: 'Premier cours', icon: '🎯', earned: true, date: '15 Jan 2024' },
-  { id: '2', title: '7 jours consécutifs', icon: '🔥', earned: true, date: '20 Jan 2024' },
-  { id: '3', title: 'Premier certificat', icon: '🏆', earned: true, date: '28 Jan 2024' },
-  { id: '4', title: 'Quiz parfait', icon: '⭐', earned: false, progress: 3 },
-  { id: '5', title: 'Cours terminé', icon: '📚', earned: false, progress: 1 },
-];
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Accueil', href: '/learn' },
@@ -71,8 +63,11 @@ export default function LearnPage() {
   const [catalogCourses, setCatalogCourses] = useState<CatalogCourseDto[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
+  const [badges, setBadges] = useState<GamificationBadgeDto[]>([]);
+  const [earnedBadgeIds, setEarnedBadgeIds] = useState<Set<string>>(new Set());
+  const [isLoadingBadges, setIsLoadingBadges] = useState(true);
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
 
   const loadCatalog = async () => {
     setIsLoadingCourses(true);
@@ -86,9 +81,30 @@ export default function LearnPage() {
     }
   };
 
+  const loadBadges = async () => {
+    setIsLoadingBadges(true);
+    try {
+      const [profile, all] = await Promise.all([gamificationApi.profile(), gamificationApi.allBadges()]);
+      const earnedIds = new Set(profile.badges.map((badge) => badge.id));
+      const byType = new Map(profile.badges.map((badge) => [badge.type, badge]));
+      setEarnedBadgeIds(earnedIds);
+      setBadges(all.map((badge) => byType.get(badge.type) || badge));
+    } catch (error) {
+      setBadges([]);
+      setEarnedBadgeIds(new Set());
+      toast.error(error instanceof Error ? error.message : 'Chargement des succès impossible');
+    } finally {
+      setIsLoadingBadges(false);
+    }
+  };
+
   useEffect(() => {
     loadCatalog();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) loadBadges();
+  }, [isAuthenticated]);
 
   const visibleCourses = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -570,40 +586,70 @@ export default function LearnPage() {
           )}
 
           {activeTab === 'achievements' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {achievements.map((achievement, index) => (
-                <motion.div
-                  key={achievement.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <Card className={achievement.earned ? '' : 'opacity-60'}>
-                    <CardContent className="flex items-center gap-4">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${
-                        achievement.earned 
-                          ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
-                          : 'bg-gray-100 dark:bg-gray-700'
-                      }`}>
-                        {achievement.icon}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{achievement.title}</h3>
-                        {achievement.earned ? (
-                          <p className="text-sm text-green-600">{achievement.date}</p>
-                        ) : (
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(achievement.progress || 0) * 20}%` }} />
+            <div>
+              {isLoadingBadges ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((item) => (
+                    <Card key={item}>
+                      <CardContent className="flex items-center gap-4">
+                        <div className="h-14 w-14 animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-700" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-2/3 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                          <div className="h-3 w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : badges.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+                      <Trophy className="h-7 w-7 text-amber-600 dark:text-amber-300" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Aucun succès pour le moment</h3>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      Terminez vos leçons, quiz et cours pour gagner des badges et de l'expérience.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {badges.map((badge, index) => {
+                    const earned = earnedBadgeIds.has(badge.id);
+                    const earnedDate = badge.earned_at ? new Date(badge.earned_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+                    return (
+                      <motion.div
+                        key={badge.id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <Card className={earned ? '' : 'opacity-60'}>
+                          <CardContent className="flex items-center gap-4">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${
+                              earned
+                                ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                                : 'bg-gray-100 dark:bg-gray-700'
+                            }`}>
+                              {badge.icon}
                             </div>
-                            <span className="text-xs text-gray-500">{achievement.progress}/5</span>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 dark:text-white">{badge.name}</h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{badge.description}</p>
+                              {earned ? (
+                                earnedDate && <p className="mt-1 text-sm text-green-600">{earnedDate}</p>
+                              ) : (
+                                <p className="mt-1 text-xs text-gray-400">{badge.xp_reward} XP</p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -613,36 +659,14 @@ export default function LearnPage() {
                 <CardTitle>Planning de la semaine</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((day, index) => {
-                    const lessons = index < 5 ? [
-                      { time: '09:00 - 10:30', title: 'Marketing Digital', type: 'video' },
-                      { time: '14:00 - 15:30', title: 'Python', type: 'quiz' },
-                    ] : [];
-                    
-                    return (
-                      <div key={day} className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50">
-                        <div className="w-20 flex-shrink-0">
-                          <p className="font-medium text-gray-900 dark:text-white">{day}</p>
-                          <p className="text-sm text-gray-500">
-                            {lessons.length > 0 ? `${lessons.length} leçons` : 'Repos'}
-                          </p>
-                        </div>
-                        <div className="flex-1 space-y-2">
-                          {lessons.map((lesson, i) => (
-                            <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-slate-800">
-                              <Clock className="w-4 h-4 text-gray-400" />
-                              <span className="text-sm text-gray-600 dark:text-gray-400">{lesson.time}</span>
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">- {lesson.title}</span>
-                              <Badge variant={lesson.type === 'video' ? 'info' : 'warning'} size="sm">
-                                {lesson.type === 'video' ? 'Vidéo' : 'Quiz'}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="py-8 text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                    <Calendar className="h-7 w-7 text-emerald-600 dark:text-emerald-300" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Aucun cours planifié</h3>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Vos prochaines sessions d'apprentissage apparaitront ici.
+                  </p>
                 </div>
               </CardContent>
             </Card>
