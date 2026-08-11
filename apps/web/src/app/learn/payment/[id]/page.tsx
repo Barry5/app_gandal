@@ -226,10 +226,6 @@ export default function CoursePaymentPage() {
       toast.error('Indiquez le numero utilise pour le paiement');
       return;
     }
-    if (!proofUrl) {
-      toast.error('Ajoutez une capture de la preuve de paiement');
-      return;
-    }
 
     setIsSubmitting(true);
     try {
@@ -486,7 +482,7 @@ export default function CoursePaymentPage() {
                   />
 
                   <div>
-                    <p className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-300">Preuve de paiement</p>
+                    <p className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-300">Preuve de paiement (facultatif)</p>
                     <button
                       type="button"
                       onClick={() => proofInputRef.current?.click()}

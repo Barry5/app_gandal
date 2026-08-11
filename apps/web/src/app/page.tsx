@@ -41,12 +41,6 @@ const features = [
   },
 ];
 
-const stats = [
-  { value: '10K+', label: 'Apprenants actifs' },
-  { value: '500+', label: 'Formateurs' },
-  { value: '98%', label: 'Satisfaction' },
-];
-
 const testimonials = [
   {
     name: 'Mariam Diallo',
@@ -166,9 +160,6 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <Badge variant="gradient" size="md" className="mb-6">
-                🚀 Plus de 500 formateurs font confiance à Savoir-App
-              </Badge>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight">
                 Transformez WhatsApp en{' '}
                 <span className="gradient-text">Académie Numérique</span>
@@ -187,21 +178,6 @@ export default function HomePage() {
                   Voir la démo
                 </Button>
               </div>
-            </motion.div>
-
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto"
-            >
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-2xl sm:text-3xl font-bold gradient-text">{stat.value}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
-                </div>
-              ))}
             </motion.div>
           </div>
 
@@ -415,7 +391,7 @@ export default function HomePage() {
                 Prêt à transformer votre groupe WhatsApp ?
               </h2>
               <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-                Rejoignez plus de 500 formateurs qui utilisent déjà Savoir-App pour structurer leurs formations et augmenter leurs revenus.
+                Rejoignez les formateurs qui utilisent déjà Savoir-App pour structurer leurs formations et augmenter leurs revenus.
               </p>
               <Link href="/auth/register">
                 <Button 

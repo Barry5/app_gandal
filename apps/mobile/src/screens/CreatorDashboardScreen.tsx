@@ -4,19 +4,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 
 const MOCK_CREATOR_DATA = {
-  totalEarnings: 4500000,
-  totalStudents: 156,
-  totalCourses: 4,
-  completionRate: 78,
-  recentCourses: [
-    { id: '1', title: 'Marketing Digital', students: 45, revenue: 2250000, thumbnail: 'https://picsum.photos/seed/c1/100/60' },
-    { id: '2', title: 'Python Avancé', students: 32, revenue: 1600000, thumbnail: 'https://picsum.photos/seed/c2/100/60' },
-    { id: '3', title: 'Entrepreneuriat', students: 18, revenue: 900000, thumbnail: 'https://picsum.photos/seed/c3/100/60' },
-  ],
-  recentStudents: [
-    { name: 'Aminata Koné', enrolled: 3, lastActive: '2h ago' },
-    { name: 'Ibrahim Sow', enrolled: 2, lastActive: '1j ago' },
-  ],
+  totalEarnings: 0,
+  totalStudents: 0,
+  totalCourses: 0,
+  completionRate: 0,
+  recentCourses: [] as {
+    id: string;
+    title: string;
+    students: number;
+    revenue: number;
+    thumbnail: string;
+  }[],
+  recentStudents: [],
 };
 
 export default function CreatorDashboardScreen() {
@@ -31,7 +30,7 @@ export default function CreatorDashboardScreen() {
 
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>{(MOCK_CREATOR_DATA.totalEarnings / 1000000).toFixed(1)}M</Text>
+          <Text style={styles.statValue}>{MOCK_CREATOR_DATA.totalEarnings.toLocaleString('fr-FR')}</Text>
           <Text style={styles.statLabel}>GNF revenus</Text>
         </View>
         <View style={styles.statCard}>
@@ -61,6 +60,11 @@ export default function CreatorDashboardScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Cours récents</Text>
+        {MOCK_CREATOR_DATA.recentCourses.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Aucun cours pour le moment</Text>
+          </View>
+        )}
         {MOCK_CREATOR_DATA.recentCourses.map((course) => (
           <TouchableOpacity key={course.id} style={styles.courseCard}>
             <View style={styles.courseThumbnail} />
@@ -99,5 +103,7 @@ const styles = StyleSheet.create({
   courseTitle: { fontSize: 14, fontWeight: '600', color: '#0f172a' },
   courseMeta: { fontSize: 12, color: '#64748b', marginTop: 2 },
   courseRevenue: { fontSize: 14, fontWeight: 'bold', color: '#059669' },
+  emptyState: { backgroundColor: '#ffffff', borderRadius: 16, padding: 24, alignItems: 'center' },
+  emptyText: { fontSize: 14, color: '#64748b' },
   bottomSpacer: { height: 100 },
 });

@@ -140,16 +140,6 @@ export default function HomeScreen() {
             <Text style={styles.statValue}>{enrolledCourses.length}</Text>
             <Text style={styles.statLabel}>Cours inscrits</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>12</Text>
-            <Text style={styles.statLabel}>Leçons complétées</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>85%</Text>
-            <Text style={styles.statLabel}>Taux de réussite</Text>
-          </View>
         </View>
 
         {/* Featured Courses */}

@@ -314,7 +314,7 @@ export default function MigrationPage() {
               Prêt à professionnaliser votre formation ?
             </h2>
             <p className="text-xl text-slate-400 mb-10">
-              Rejoignez +500 formateurs qui ont déjà migré leur groupe WhatsApp vers Savoir
+              Rejoignez les formateurs qui ont déjà migré leur groupe WhatsApp vers Savoir
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth/register">

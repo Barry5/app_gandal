@@ -17,26 +17,7 @@ interface Certificate {
   userName: string;
 }
 
-const MOCK_CERTIFICATES: Certificate[] = [
-  {
-    id: '1',
-    certificateNumber: 'CERT-1700000000-ABC123',
-    verificationCode: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
-    issuedAt: '2024-01-15',
-    courseTitle: 'Marketing Digital pour PME',
-    thumbnailUrl: 'https://picsum.photos/seed/cert1/400/300',
-    userName: 'Mamadou Diallo',
-  },
-  {
-    id: '2',
-    certificateNumber: 'CERT-1705000000-DEF456',
-    verificationCode: 'q1r2s3t4u5v6w7x8y9z0a1b2c3d4e5',
-    issuedAt: '2024-02-01',
-    courseTitle: 'Initiation à Python',
-    thumbnailUrl: 'https://picsum.photos/seed/cert2/400/300',
-    userName: 'Mamadou Diallo',
-  },
-];
+const MOCK_CERTIFICATES: Certificate[] = [];
 
 export default function CertificatesScreen() {
   const navigation = useNavigation<any>();

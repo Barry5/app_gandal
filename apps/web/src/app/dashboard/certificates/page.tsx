@@ -39,68 +39,7 @@ interface Certificate {
   status: 'completed' | 'pending' | 'expired';
 }
 
-const mockCertificates: Certificate[] = [
-  {
-    id: '1',
-    studentName: 'Aminata Koné',
-    studentEmail: 'aminata.kone@email.com',
-    courseTitle: 'Marketing Digital pour PME',
-    courseThumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200&h=120&fit=crop',
-    certificateNumber: 'CERT-2024-001-A7B3',
-    verificationCode: 'a7b3c9d2e5f8',
-    issuedAt: '2024-03-15',
-    progress: 100,
-    status: 'completed',
-  },
-  {
-    id: '2',
-    studentName: 'Mariam Diallo',
-    studentEmail: 'mariam.diallo@email.com',
-    courseTitle: 'Marketing Digital pour PME',
-    courseThumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200&h=120&fit=crop',
-    certificateNumber: 'CERT-2024-002-C4D8',
-    verificationCode: 'c4d8e1f3a6b9',
-    issuedAt: '2024-03-10',
-    progress: 100,
-    status: 'completed',
-  },
-  {
-    id: '3',
-    studentName: 'Ibrahim Sow',
-    studentEmail: 'ibrahim.sow@email.com',
-    courseTitle: 'Initiation à la Programmation Python',
-    courseThumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=200&h=120&fit=crop',
-    certificateNumber: 'CERT-2024-003-E9F2',
-    verificationCode: 'e9f2a1b4c7d0',
-    issuedAt: '2024-02-28',
-    progress: 100,
-    status: 'completed',
-  },
-  {
-    id: '4',
-    studentName: 'Fatoumata Barry',
-    studentEmail: 'fatoumata.barry@email.com',
-    courseTitle: 'Initiation à la Programmation Python',
-    courseThumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=200&h=120&fit=crop',
-    certificateNumber: 'CERT-2024-004-G5H1',
-    verificationCode: 'g5h1j2k3l4m6',
-    issuedAt: '2024-02-20',
-    progress: 100,
-    status: 'completed',
-  },
-  {
-    id: '5',
-    studentName: 'Sékou Touré',
-    studentEmail: 'sekou.toure@email.com',
-    courseTitle: 'Gestion Financière pour Artisans',
-    courseThumbnail: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=200&h=120&fit=crop',
-    certificateNumber: '',
-    verificationCode: '',
-    issuedAt: '',
-    progress: 65,
-    status: 'pending',
-  },
-];
+const mockCertificates: Certificate[] = [];
 
 const statusConfig = {
   completed: { label: 'Délivré', variant: 'success' as const, icon: CheckCircle },
@@ -122,6 +61,8 @@ export default function CertificatesPage() {
 
   const completedCount = certificates.filter(c => c.status === 'completed').length;
   const pendingCount = certificates.filter(c => c.status === 'pending').length;
+  const thisMonthCount = certificates.filter(c => c.status === 'completed' && new Date(c.issuedAt).getMonth() === new Date().getMonth()).length;
+  const completionRate = certificates.length > 0 ? Math.round((completedCount / certificates.length) * 100) : 0;
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -175,7 +116,7 @@ export default function CertificatesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-500 dark:text-gray-400 text-sm">Ce mois</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">8</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{thisMonthCount}</p>
                 </div>
                 <Calendar className="w-10 h-10 text-green-500" />
               </div>
@@ -186,7 +127,7 @@ export default function CertificatesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-500 dark:text-gray-400 text-sm">Taux de complétion</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">92%</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{completionRate}%</p>
                 </div>
                 <Shield className="w-10 h-10 text-blue-500" />
               </div>
@@ -399,7 +340,7 @@ function CertificateDetailModal({
 
 function VerificationModal({ onClose }: { onClose: () => void }) {
   const [code, setCode] = useState('');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{ valid: boolean; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleVerify = () => {
@@ -407,10 +348,8 @@ function VerificationModal({ onClose }: { onClose: () => void }) {
     setTimeout(() => {
       setLoading(false);
       setResult({
-        valid: true,
-        name: 'Aminata Koné',
-        course: 'Marketing Digital pour PME',
-        date: '15 Mars 2024',
+        valid: false,
+        message: 'Aucun certificat correspondant a ce code. La verification en ligne sera disponible prochainement.',
       });
     }, 1500);
   };
@@ -457,18 +396,14 @@ function VerificationModal({ onClose }: { onClose: () => void }) {
           </>
         ) : (
           <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Certificat valide</h3>
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 text-left">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Nom</p>
-              <p className="font-medium text-gray-900 dark:text-white mb-3">{result.name}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Cours</p>
-              <p className="font-medium text-gray-900 dark:text-white mb-3">{result.course}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Date</p>
-              <p className="font-medium text-gray-900 dark:text-white">{result.date}</p>
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Certificat introuvable</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{result.message}</p>
+            <Button variant="outline" className="w-full" onClick={() => setResult(null)}>
+              Reessayer
+            </Button>
           </div>
         )}
       </motion.div>

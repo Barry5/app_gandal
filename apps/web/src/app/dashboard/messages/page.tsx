@@ -50,64 +50,11 @@ interface Conversation {
   course?: string;
 }
 
-const mockConversations: Conversation[] = [
-  {
-    id: '1',
-    name: 'Aminata Koné',
-    lastMessage: 'Merci pour le cours, j\'ai une question sur le marketing...',
-    timestamp: '10:30',
-    unread: 2,
-    isOnline: true,
-    course: 'Marketing Digital pour PME',
-    messages: [
-      { id: '1', content: 'Bonjour ! J\'ai une question sur le dernier module.', timestamp: '10:15', isOwn: false, status: 'read' },
-      { id: '2', content: 'Bonjour Aminata ! Bien sûr, je suis là. Quelle est votre question ?', timestamp: '10:20', isOwn: true, status: 'read' },
-      { id: '3', content: 'Merci pour le cours, j\'ai une question sur le marketing...', timestamp: '10:30', isOwn: false, status: 'delivered' },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Ibrahim Sow',
-    lastMessage: 'Je vais terminer le quiz ce soir',
-    timestamp: 'Hier',
-    unread: 0,
-    isOnline: false,
-    course: 'Initiation à la Programmation Python',
-    messages: [
-      { id: '1', content: 'Bonjour Ibrahim, comment se passe votre apprentissage ?', timestamp: 'Hier', isOwn: true, status: 'read' },
-      { id: '2', content: 'Je vais terminer le quiz ce soir', timestamp: 'Hier', isOwn: false, status: 'read' },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Mariam Diallo',
-    lastMessage: 'Le certificat est magnifique, merci beaucoup !',
-    timestamp: 'Hier',
-    unread: 0,
-    isOnline: true,
-    course: 'Marketing Digital pour PME',
-    messages: [
-      { id: '1', content: 'Félicitations pour votre certificat !', timestamp: 'Hier', isOwn: true, status: 'read' },
-      { id: '2', content: 'Le certificat est magnifique, merci beaucoup !', timestamp: 'Hier', isOwn: false, status: 'read' },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Sékou Touré',
-    lastMessage: 'Pouvez-vous m\'expliquer encore une fois ?',
-    timestamp: '2j',
-    unread: 1,
-    isOnline: false,
-    course: 'Gestion Financière pour Artisans',
-    messages: [
-      { id: '1', content: 'Pouvez-vous m\'expliquer encore une fois ?', timestamp: '2j', isOwn: false, status: 'delivered' },
-    ],
-  },
-];
+const mockConversations: Conversation[] = [];
 
 export default function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(mockConversations[0]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -177,6 +124,17 @@ export default function MessagesPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
+              {filteredConversations.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                  <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mb-4">
+                    <Search className="w-8 h-8 text-indigo-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Aucune conversation</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+                    Vos messages avec vos eleves apparaitront ici.
+                  </p>
+                </div>
+              )}
               {filteredConversations.map((conversation, index) => (
                 <motion.div
                   key={conversation.id}
