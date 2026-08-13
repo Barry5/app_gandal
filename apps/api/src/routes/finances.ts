@@ -49,15 +49,127 @@ async function requireAdmin(request: FastifyRequest, reply: FastifyReply): Promi
   return tokenUser;
 }
 
-export async function getCommissionRate(fastify: FastifyInstance, creatorId: string): Promise<number> {
-  const result = await fastify.pg.query(
-    `SELECT COALESCE(cr.rate, c.commission_rate) AS rate
-     FROM creators c
-     LEFT JOIN commission_rates cr ON cr.plan = c.plan
-     WHERE c.id = $1`,
-    [creatorId]
+export type CommissionResolution = {
+  rate: number;
+  monetizationModel: 'commission' | 'subscription';
+  minCommissionAmount: number | null;
+  maxCommissionAmount: number | null;
+  source: string;
+};
+
+export async function resolveCommissionForSale(
+  fastify: FastifyInstance,
+  creatorId: string,
+  courseCategory?: string | null,
+): Promise<CommissionResolution> {
+  const creatorResult = await fastify.pg.query(
+    `SELECT
+       monetization_model,
+       subscription_status,
+       subscription_expires_at,
+       grace_period_ends_at,
+       custom_commission_rate
+     FROM creators
+     WHERE id = $1`,
+    [creatorId],
   );
-  return Number(result.rows[0]?.rate || 10);
+
+  if (creatorResult.rows.length === 0) {
+    return {
+      rate: Number(process.env.DEFAULT_COMMISSION_RATE || 15),
+      monetizationModel: 'commission',
+      minCommissionAmount: null,
+      maxCommissionAmount: null,
+      source: 'default',
+    };
+  }
+
+  const creator = creatorResult.rows[0];
+  const now = new Date();
+
+  const subscriptionActive =
+    creator.monetization_model === 'subscription' &&
+    (creator.subscription_status === 'active'
+      ? new Date(creator.subscription_expires_at) > now
+      : creator.subscription_status === 'grace_period' &&
+        new Date(creator.grace_period_ends_at || creator.subscription_expires_at) > now);
+
+  if (subscriptionActive) {
+    return {
+      rate: 0,
+      monetizationModel: 'subscription',
+      minCommissionAmount: null,
+      maxCommissionAmount: null,
+      source: 'subscription',
+    };
+  }
+
+  if (creator.custom_commission_rate !== null && creator.custom_commission_rate >= 0) {
+    return {
+      rate: Number(creator.custom_commission_rate),
+      monetizationModel: 'commission',
+      minCommissionAmount: null,
+      maxCommissionAmount: null,
+      source: 'creator_override',
+    };
+  }
+
+  const activeValidity = `is_active = true
+    AND (valid_from IS NULL OR valid_from <= NOW())
+    AND (valid_to IS NULL OR valid_to >= NOW())`;
+
+  const creatorRuleResult = await fastify.pg.query(
+    `SELECT rate, min_commission_amount, max_commission_amount
+     FROM commission_rules
+     WHERE ${activeValidity} AND scope = 'creator' AND creator_id = $1
+     ORDER BY created_at DESC LIMIT 1`,
+    [creatorId],
+  );
+  let rule = creatorRuleResult.rows[0];
+
+  if (!rule && courseCategory) {
+    const categoryRuleResult = await fastify.pg.query(
+      `SELECT rate, min_commission_amount, max_commission_amount
+       FROM commission_rules
+       WHERE ${activeValidity} AND scope = 'category' AND LOWER(category) = LOWER($1)
+       ORDER BY created_at DESC LIMIT 1`,
+      [courseCategory],
+    );
+    rule = categoryRuleResult.rows[0];
+  }
+
+  if (!rule) {
+    const globalRuleResult = await fastify.pg.query(
+      `SELECT rate, min_commission_amount, max_commission_amount
+       FROM commission_rules
+       WHERE ${activeValidity} AND scope = 'global'
+       ORDER BY created_at DESC LIMIT 1`,
+    );
+    rule = globalRuleResult.rows[0];
+  }
+
+  if (rule) {
+    return {
+      rate: Number(rule.rate),
+      monetizationModel: 'commission',
+      minCommissionAmount: rule.min_commission_amount == null ? null : Number(rule.min_commission_amount),
+      maxCommissionAmount: rule.max_commission_amount == null ? null : Number(rule.max_commission_amount),
+      source: 'rule',
+    };
+  }
+
+  return {
+    rate: Number(process.env.DEFAULT_COMMISSION_RATE || 15),
+    monetizationModel: 'commission',
+    minCommissionAmount: null,
+    maxCommissionAmount: null,
+    source: 'default',
+  };
+}
+
+export async function getCommissionRate(fastify: FastifyInstance, creatorId: string, courseCategory?: string | null): Promise<number> {
+  const resolution = await resolveCommissionForSale(fastify, creatorId, courseCategory);
+  return resolution.rate;
 }
 
 function mapSubmission(row: any) {
@@ -395,7 +507,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
     const admin = request.user as AuthUser;
 
     const submissionResult = await fastify.pg.query(
-      `SELECT ps.*, c.title, c.price_cfa, c.currency, c.creator_id, cr.user_id AS trainer_id
+      `SELECT ps.*, c.title, c.price_cfa, c.currency, c.creator_id, c.category, cr.user_id AS trainer_id
        FROM payment_submissions ps
        JOIN courses c ON c.id = ps.course_id
        JOIN creators cr ON cr.id = c.creator_id
@@ -420,8 +532,15 @@ export async function financeRoutes(fastify: FastifyInstance) {
     }
 
     const grossAmount = Number(submission.amount);
-    const commissionRate = await getCommissionRate(fastify, submission.creator_id);
-    const platformCommission = Math.round((grossAmount * commissionRate) / 100);
+    const resolution = await resolveCommissionForSale(fastify, submission.creator_id, submission.category);
+    const commissionRate = resolution.rate;
+    let platformCommission = Math.round((grossAmount * commissionRate) / 100);
+    if (resolution.minCommissionAmount != null) {
+      platformCommission = Math.max(platformCommission, resolution.minCommissionAmount);
+    }
+    if (resolution.maxCommissionAmount != null) {
+      platformCommission = Math.min(platformCommission, resolution.maxCommissionAmount);
+    }
     const trainerAmount = grossAmount - platformCommission;
     const reference = 'OFFLINE-' + submission.id.slice(0, 8).toUpperCase();
 
@@ -431,8 +550,8 @@ export async function financeRoutes(fastify: FastifyInstance) {
         `INSERT INTO course_activations
            (course_id, student_id, trainer_id, course_snapshot, price_at_activation, currency,
             payment_method, payment_reference, gross_amount, platform_commission, trainer_amount,
-            commission_rate, payment_submission_id, status, activated_by, events)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'ACTIVATED', $14, $15)
+            commission_rate, payment_fee, monetization_model_at_sale, payment_submission_id, status, activated_by, events)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, $13, $14, 'ACTIVATED', $15, $16)
          RETURNING id`,
         [
           submission.course_id,
@@ -447,6 +566,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
           platformCommission,
           trainerAmount,
           commissionRate,
+          resolution.monetizationModel,
           submission.id,
           admin.id,
           JSON.stringify([
@@ -469,8 +589,9 @@ export async function financeRoutes(fastify: FastifyInstance) {
       await fastify.pg.query(
         `INSERT INTO financial_transactions
            (activation_id, course_id, trainer_id, student_id, gross_amount, platform_commission,
-            trainer_amount, currency, payment_method, payment_reference, commission_rate, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'DUE')`,
+            trainer_amount, currency, payment_method, payment_reference, commission_rate,
+            payment_fee, monetization_model_at_sale, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12, 'DUE')`,
         [
           activationId,
           submission.course_id,
@@ -483,6 +604,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
           submission.payment_method,
           reference,
           commissionRate,
+          resolution.monetizationModel,
         ]
       );
 

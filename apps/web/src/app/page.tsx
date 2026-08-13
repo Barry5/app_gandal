@@ -64,40 +64,40 @@ const testimonials = [
 
 const plans = [
   {
-    name: 'Gratuit',
-    price: '0',
-    period: 'pour toujours',
-    description: 'Parfait pour tester et commencer',
+    name: 'Starter',
+    price: '0 GNF',
+    period: '/mois',
+    description: 'Démarrez sans frais, payez une commission sur les ventes.',
     features: [
       'Jusqu\'à 10 élèves',
       '3 cours maximum',
-      'Commission 10%',
-      'Support comunidad',
+      'Commission de 15% par vente',
+      'Support communautaire',
     ],
-    cta: 'Commencer gratuit',
+    cta: 'Commencer gratuitement',
     highlighted: false,
   },
   {
     name: 'Pro',
-    price: '49 900',
+    price: '75 000',
     period: 'GNF/mois',
-    description: 'Pour les formateurs sérieux',
+    description: 'Pour les formateurs qui vendent régulièrement.',
     features: [
       'Élèves illimités',
       'Cours illimités',
-      'Commission 3%',
+      '0% de commission sur les ventes',
       'Certification incluse',
       'Analytics avancées',
       'Support prioritaire',
     ],
-    cta: 'Essai gratuit 14j',
+    cta: 'Essai gratuit 14 jours',
     highlighted: true,
   },
   {
     name: 'Enterprise',
     price: 'Sur devis',
     period: '',
-    description: 'Pour les grandes écoles',
+    description: 'Pour les écoles et les grandes organisations.',
     features: [
       'Tout du plan Pro',
       'White label',
@@ -294,7 +294,7 @@ export default function HomePage() {
                     <h3 className={`text-xl font-bold ${plan.highlighted ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                       {plan.name}
                     </h3>
-                    <div className="mt-2">
+                    <div className="mt-2 flex items-baseline">
                       <span className={`text-4xl font-extrabold ${plan.highlighted ? 'text-white' : 'gradient-text'}`}>
                         {plan.price}
                       </span>

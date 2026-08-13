@@ -17,6 +17,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isCreator: boolean;
@@ -71,6 +72,7 @@ function mapUser(data: any): User {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const isAuthenticated = !!user;
@@ -88,6 +90,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
         return;
       }
+
+      setToken(token);
 
       if (storedUser) {
         try {
@@ -109,11 +113,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(currentUser);
         localStorage.setItem('savoir_user', JSON.stringify(currentUser));
         if (payload.token) {
-          localStorage.setItem('savoir_token', payload.token);
-        }
-      } catch {
+localStorage.setItem('savoir_token', payload.token);
+        setToken(payload.token);
+      }
+    } catch {
         localStorage.removeItem('savoir_user');
         localStorage.removeItem('savoir_token');
+        setToken(null);
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -143,6 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(currentUser);
       localStorage.setItem('savoir_user', JSON.stringify(currentUser));
       localStorage.setItem('savoir_token', payload.token);
+      setToken(payload.token);
       toast.success('Connexion reussie !');
 
       if (currentUser.role === 'creator' || currentUser.role === 'admin') {
@@ -178,6 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(newUser);
       localStorage.setItem('savoir_user', JSON.stringify(newUser));
       localStorage.setItem('savoir_token', payload.token);
+      setToken(payload.token);
       toast.success('Compte cree avec succes !');
 
       if (newUser.role === 'creator' || newUser.role === 'admin') {
@@ -195,6 +203,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = useCallback(() => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem('savoir_user');
     localStorage.removeItem('savoir_token');
     toast.success('Deconnexion reussie');
@@ -208,6 +217,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{
       user,
+      token,
       isLoading,
       isAuthenticated,
       isCreator,

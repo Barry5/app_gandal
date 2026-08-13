@@ -275,6 +275,18 @@ export async function pricingRoutes(fastify: FastifyInstance) {
         [plan, data.rate, user.id]
       );
 
+      const previousResult = await fastify.pg.query(
+        `SELECT rate FROM commission_rates WHERE plan = $1`,
+        [plan]
+      );
+      const previousRate = previousResult.rows.length > 0 ? Number(previousResult.rows[0].rate) : null;
+
+      await fastify.pg.query(
+        `INSERT INTO commission_rate_history (scope, category, old_rate, new_rate, changed_by, reason)
+         VALUES ('global', NULL, $1, $2, $3, 'plan_rate_update')`,
+        [previousRate, data.rate, user.id]
+      );
+
       return reply.send({ rate: result.rows[0] });
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -57,6 +57,13 @@ export const creators = pgTable('creators', {
     autoRelease: boolean;
   }>().default({ allowWatermark: true, maxDevices: 2, requireApproval: false, autoRelease: true }),
   totalEarnings: integer('total_earnings').notNull().default(0),
+  monetizationModel: varchar('monetization_model', { length: 20 }).notNull().default('commission'),
+  customCommissionRate: integer('custom_commission_rate'),
+  subscriptionId: uuid('subscription_id').references((): any => creatorSubscriptions.id, { onDelete: 'set null' }),
+  subscriptionStatus: varchar('subscription_status', { length: 30 }),
+  subscriptionExpiresAt: timestamp('subscription_expires_at'),
+  gracePeriodEndsAt: timestamp('grace_period_ends_at'),
+  hasUsedTrial: boolean('has_used_trial').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -413,6 +420,8 @@ export const courseActivations = pgTable('course_activations', {
   platformCommission: integer('platform_commission').notNull(),
   trainerAmount: integer('trainer_amount').notNull(),
   commissionRate: integer('commission_rate').notNull(),
+  paymentFee: integer('payment_fee').notNull().default(0),
+  monetizationModelAtSale: varchar('monetization_model_at_sale', { length: 20 }).notNull().default('commission'),
   paymentSubmissionId: uuid('payment_submission_id').references(() => paymentSubmissions.id, { onDelete: 'set null' }),
   status: varchar('status', { length: 20 }).notNull().default('ACTIVATED'),
   activatedBy: uuid('activated_by').references(() => users.id, { onDelete: 'set null' }),
@@ -443,6 +452,8 @@ export const financialTransactions = pgTable('financial_transactions', {
   paymentMethod: varchar('payment_method', { length: 50 }).notNull(),
   paymentReference: varchar('payment_reference', { length: 255 }),
   commissionRate: integer('commission_rate').notNull(),
+  paymentFee: integer('payment_fee').notNull().default(0),
+  monetizationModelAtSale: varchar('monetization_model_at_sale', { length: 20 }).notNull().default('commission'),
   status: financialTransactionStatus('status').notNull().default('DUE'),
   validatedBy: uuid('validated_by').references(() => users.id, { onDelete: 'set null' }),
   validatedAt: timestamp('validated_at'),
@@ -521,6 +532,147 @@ export const commissionRates = pgTable('commission_rates', {
   id: uuid('id').defaultRandom().primaryKey(),
   plan: creatorPlans('plan').notNull().unique(),
   rate: integer('rate').notNull().default(10),
+  updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const subscriptionPlans = pgTable('subscription_plans', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  priceGnf: integer('price_gnf').notNull().default(0),
+  billingInterval: varchar('billing_interval', { length: 20 }).notNull().default('monthly'),
+  features: jsonb('features').$type<string[]>().notNull().default([]),
+  trialPeriodDays: integer('trial_period_days').notNull().default(0),
+  maxCourses: integer('max_courses'),
+  maxStudents: integer('max_students'),
+  commissionRate: integer('commission_rate').notNull().default(0),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: boolean('is_active').notNull().default(true),
+  isPublic: boolean('is_public').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_subscription_plans_active: index('idx_subscription_plans_active').on(table.isActive),
+}));
+
+export const creatorSubscriptions = pgTable('creator_subscriptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  creatorId: uuid('creator_id').references(() => creators.id, { onDelete: 'cascade' }).notNull(),
+  planId: uuid('plan_id').references(() => subscriptionPlans.id, { onDelete: 'set null' }),
+  status: varchar('status', { length: 30 }).notNull().default('active'),
+  priceAtSubscription: integer('price_at_subscription').notNull().default(0),
+  currency: varchar('currency', { length: 3 }).notNull().default('GNF'),
+  paymentMethod: varchar('payment_method', { length: 50 }),
+  transactionRef: varchar('transaction_ref', { length: 255 }),
+  startedAt: timestamp('started_at').notNull().defaultNow(),
+  expiresAt: timestamp('expires_at').notNull(),
+  gracePeriodEndsAt: timestamp('grace_period_ends_at'),
+  nextRenewalAt: timestamp('next_renewal_at'),
+  isTrial: boolean('is_trial').notNull().default(false),
+  cancelledAt: timestamp('cancelled_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_creator_subscriptions_creator: index('idx_creator_subscriptions_creator').on(table.creatorId),
+  idx_creator_subscriptions_status: index('idx_creator_subscriptions_status').on(table.status),
+  idx_creator_subscriptions_expiry: index('idx_creator_subscriptions_expiry').on(table.expiresAt),
+}));
+
+export const subscriptionPayments = pgTable('subscription_payments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  subscriptionId: uuid('subscription_id').references(() => creatorSubscriptions.id, { onDelete: 'cascade' }).notNull(),
+  amount: integer('amount').notNull(),
+  currency: varchar('currency', { length: 3 }).notNull().default('GNF'),
+  paymentMethod: varchar('payment_method', { length: 50 }),
+  provider: paymentProviders('provider'),
+  providerRef: varchar('provider_ref', { length: 255 }),
+  status: varchar('status', { length: 30 }).notNull().default('pending'),
+  periodStart: timestamp('period_start'),
+  periodEnd: timestamp('period_end'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_subscription_payments_subscription: index('idx_subscription_payments_subscription').on(table.subscriptionId),
+  idx_subscription_payments_provider_ref: index('idx_subscription_payments_provider_ref').on(table.providerRef),
+}));
+
+export const creatorMonetizationHistory = pgTable('creator_monetization_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  creatorId: uuid('creator_id').references(() => creators.id, { onDelete: 'cascade' }).notNull(),
+  previousMode: varchar('previous_mode', { length: 20 }).notNull(),
+  newMode: varchar('new_mode', { length: 20 }).notNull(),
+  subscriptionId: uuid('subscription_id').references(() => creatorSubscriptions.id, { onDelete: 'set null' }),
+  reason: varchar('reason', { length: 255 }),
+  changedBy: uuid('changed_by').references(() => users.id, { onDelete: 'set null' }),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_monetization_history_creator: index('idx_monetization_history_creator').on(table.creatorId),
+  idx_monetization_history_created: index('idx_monetization_history_created').on(table.createdAt),
+}));
+
+export const commissionRules = pgTable('commission_rules', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  scope: varchar('scope', { length: 20 }).notNull().default('global'),
+  creatorId: uuid('creator_id').references(() => creators.id, { onDelete: 'cascade' }),
+  category: varchar('category', { length: 100 }),
+  rate: integer('rate').notNull(),
+  minCommissionAmount: integer('min_commission_amount'),
+  maxCommissionAmount: integer('max_commission_amount'),
+  validFrom: timestamp('valid_from'),
+  validTo: timestamp('valid_to'),
+  isActive: boolean('is_active').notNull().default(true),
+  isPromo: boolean('is_promo').notNull().default(false),
+  promoLabel: varchar('promo_label', { length: 100 }),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_commission_rules_scope: index('idx_commission_rules_scope').on(table.scope),
+  idx_commission_rules_creator: index('idx_commission_rules_creator').on(table.creatorId),
+  idx_commission_rules_category: index('idx_commission_rules_category').on(table.category),
+}));
+
+export const commissionRateHistory = pgTable('commission_rate_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  ruleId: uuid('rule_id').references(() => commissionRules.id, { onDelete: 'set null' }),
+  scope: varchar('scope', { length: 20 }).notNull(),
+  creatorId: uuid('creator_id').references(() => creators.id, { onDelete: 'cascade' }),
+  category: varchar('category', { length: 100 }),
+  oldRate: integer('old_rate').notNull(),
+  newRate: integer('new_rate').notNull(),
+  changedBy: uuid('changed_by').references(() => users.id, { onDelete: 'set null' }),
+  reason: varchar('reason', { length: 255 }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_commission_rate_history_rule: index('idx_commission_rate_history_rule').on(table.ruleId),
+  idx_commission_rate_history_created: index('idx_commission_rate_history_created').on(table.createdAt),
+}));
+
+export const withdrawals = pgTable('withdrawals', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  creatorId: uuid('creator_id').references(() => creators.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  amount: integer('amount').notNull(),
+  currency: varchar('currency', { length: 3 }).notNull().default('GNF'),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  method: varchar('method', { length: 50 }),
+  reference: varchar('reference', { length: 255 }),
+  rejectionReason: text('rejection_reason'),
+  processedBy: uuid('processed_by').references(() => users.id, { onDelete: 'set null' }),
+  processedAt: timestamp('processed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  idx_withdrawals_creator: index('idx_withdrawals_creator').on(table.creatorId),
+  idx_withdrawals_user: index('idx_withdrawals_user').on(table.userId),
+  idx_withdrawals_status: index('idx_withdrawals_status').on(table.status),
+}));
+
+export const platformSettings = pgTable('platform_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  key: varchar('key', { length: 100 }).notNull().unique(),
+  value: jsonb('value').notNull(),
   updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -729,3 +881,12 @@ export type LeaderboardEntry = typeof leaderboard.$inferSelect;
 export type PaymentSubmission = typeof paymentSubmissions.$inferSelect;
 export type CourseActivation = typeof courseActivations.$inferSelect;
 export type FinancialTransaction = typeof financialTransactions.$inferSelect;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type NewSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+export type CreatorSubscription = typeof creatorSubscriptions.$inferSelect;
+export type SubscriptionPayment = typeof subscriptionPayments.$inferSelect;
+export type CreatorMonetizationHistory = typeof creatorMonetizationHistory.$inferSelect;
+export type CommissionRule = typeof commissionRules.$inferSelect;
+export type CommissionRateHistory = typeof commissionRateHistory.$inferSelect;
+export type Withdrawal = typeof withdrawals.$inferSelect;
+export type PlatformSetting = typeof platformSettings.$inferSelect;

@@ -4,7 +4,6 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
-import pg from 'pg';
 import { authRoutes } from './routes/auth.js';
 import { courseRoutes } from './routes/courses.js';
 import { userRoutes } from './routes/users.js';
@@ -16,35 +15,20 @@ import { aiRoutes } from './routes/ai.js';
 import { pricingRoutes } from './routes/pricing.js';
 import { analyticsRoutes } from './routes/analytics.js';
 import { financeRoutes } from './routes/finances.js';
+import { monetizationRoutes } from './routes/monetization.js';
+import { adminMonetizationRoutes } from './routes/adminMonetization.js';
+import { jobRoutes } from './routes/jobs.js';
+import { createPool } from './config/pool.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
-    pg: pg.Pool;
+    pg: import('pg').Pool;
   }
 }
 
 const server = Fastify({
   logger: true,
 });
-
-function getPgPoolConfig(databaseUrl: string): pg.PoolConfig {
-  const parsedUrl = new URL(databaseUrl);
-  const sslMode = parsedUrl.searchParams.get('sslmode');
-  const shouldUseSsl = Boolean(sslMode) || parsedUrl.hostname.includes('supabase.com');
-
-  if (!shouldUseSsl) {
-    return { connectionString: databaseUrl };
-  }
-
-  parsedUrl.searchParams.delete('sslmode');
-
-  return {
-    connectionString: parsedUrl.toString(),
-    ssl: {
-      rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
-    },
-  };
-}
 
 async function start() {
   try {
@@ -66,7 +50,7 @@ async function start() {
       .map((origin) => origin.trim())
       .filter(Boolean);
 
-    const pool = new pg.Pool(getPgPoolConfig(databaseUrl));
+    const pool = createPool(databaseUrl);
     server.decorate('pg', pool);
     server.addHook('onClose', async () => {
       await pool.end();
@@ -109,6 +93,9 @@ async function start() {
     server.register(pricingRoutes, { prefix: '/api/pricing' });
     server.register(analyticsRoutes, { prefix: '/api/analytics' });
     server.register(financeRoutes, { prefix: '/api/finances' });
+    server.register(monetizationRoutes, { prefix: '/api/monetization' });
+    server.register(adminMonetizationRoutes, { prefix: '/api' });
+    server.register(jobRoutes, { prefix: '/api/jobs' });
 
     server.get('/api/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 

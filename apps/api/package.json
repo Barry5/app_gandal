@@ -7,7 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "job:handle-expirations": "node dist/jobs/handle-expirations.js"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.0",
