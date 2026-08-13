@@ -277,15 +277,15 @@ export async function adminMonetizationRoutes(fastify: FastifyInstance) {
          SET monetization_model = $1,
              custom_commission_rate = $2,
              subscription_status = CASE
-               WHEN $1 = 'commission' THEN NULL
+               WHEN $1::varchar = 'commission' THEN NULL
                ELSE subscription_status
              END,
              subscription_expires_at = CASE
-               WHEN $1 = 'commission' THEN NULL
+               WHEN $1::varchar = 'commission' THEN NULL
                ELSE subscription_expires_at
              END,
              grace_period_ends_at = CASE
-               WHEN $1 = 'commission' THEN NULL
+               WHEN $1::varchar = 'commission' THEN NULL
                ELSE grace_period_ends_at
              END
          WHERE id = $3 RETURNING id, monetization_model, custom_commission_rate`,
