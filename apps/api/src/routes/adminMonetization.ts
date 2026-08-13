@@ -192,7 +192,7 @@ export async function adminMonetizationRoutes(fastify: FastifyInstance) {
     const result = await fastify.pg.query(
       `INSERT INTO subscription_plans (name, price_gnf, trial_period_days, features, is_active, is_public)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [data.name, data.price_gnf, data.trial_period_days, data.features, data.is_active, data.is_public],
+      [data.name, data.price_gnf, data.trial_period_days, JSON.stringify(data.features), data.is_active, data.is_public],
     );
     return reply.status(201).send(result.rows[0]);
   });
@@ -204,7 +204,7 @@ export async function adminMonetizationRoutes(fastify: FastifyInstance) {
       `UPDATE subscription_plans
        SET name = $1, price_gnf = $2, trial_period_days = $3, features = $4, is_active = $5, is_public = $6, updated_at = NOW()
        WHERE id = $7 RETURNING *`,
-      [data.name, data.price_gnf, data.trial_period_days, data.features, data.is_active, data.is_public, id],
+      [data.name, data.price_gnf, data.trial_period_days, JSON.stringify(data.features), data.is_active, data.is_public, id],
     );
     if (result.rowCount === 0) {
       return reply.status(404).send({ error: 'Plan non trouve.' });

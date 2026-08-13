@@ -154,10 +154,12 @@ function SubscriptionsManagement() {
     const runAction = async (path: string, method: string, body?: any) => {
         setIsBusy(true);
         try {
+            const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+            if (body !== undefined) headers['Content-Type'] = 'application/json';
             const res = await fetch(`${apiUrl}${path}`, {
                 method,
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: body ? JSON.stringify(body) : undefined,
+                headers,
+                body: body !== undefined ? JSON.stringify(body) : undefined,
             });
             const result = await res.json();
             if (!res.ok) {
