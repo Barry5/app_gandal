@@ -223,7 +223,7 @@ export async function monetizationRoutes(fastify: FastifyInstance) {
           }
 
           const isPending = currentStatus === 'pending_payment';
-          if (remainingTime && !isPending) {
+          if (remainingTime && !isPending && !creator.is_trial) {
             // Article 5 : le retour a la commission prend effet a la fin de la periode deja payee
             await fastify.pg.query(
               `UPDATE creators

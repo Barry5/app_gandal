@@ -8,11 +8,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="w-64 bg-white dark:bg-gray-800 p-4 flex-shrink-0 border-r dark:border-gray-700">
         <h1 className="text-2xl font-bold gradient-text mb-8 px-4">Admin</h1>
         <nav className="space-y-2">
-          <Link href="/admin/dashboard" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <Link href="/dashboard/admin/dashboard" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
             <BarChart className="w-5 h-5" />
             <span>Dashboard</span>
           </Link>
-          <Link href="/admin/users" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <Link href="/dashboard/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
             <Users className="w-5 h-5" />
             <span>Utilisateurs</span>
           </Link>

@@ -25,6 +25,7 @@ import {
   Trophy,
   Users,
   Wallet,
+  CreditCard,
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -51,6 +52,7 @@ const creatorNavItems: NavItem[] = [
   { icon: Wallet, label: 'Finances', href: '/dashboard/finances', description: 'Commissions' },
   { icon: MessageSquare, label: 'Messages', href: '/dashboard/messages', description: 'Ã‰changes', badge: 3 },
   { icon: Award, label: 'Certificats', href: '/dashboard/certificates', description: 'Validations' },
+  { icon: CreditCard, label: 'Abonnement', href: '/dashboard/subscription', description: 'Formule' },
   { icon: Settings, label: 'ParamÃ¨tres', href: '/dashboard/settings', description: 'Compte' },
 ];
 
@@ -102,7 +104,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { icon: Wallet, label: 'Finances', href: '/dashboard/admin/finances', description: 'Ledger' },
     { icon: BookOpen, label: 'Cours', href: '/dashboard/courses', description: 'Supervision' },
     { icon: Percent, label: 'Commissions', href: '/admin/commissions', description: 'Tarifs' },
-    { icon: Settings, label: 'Parametres', href: '/dashboard/settings', description: 'Systeme' },
+    { icon: CreditCard, label: 'Monétisation', href: '/admin/monetization', description: 'Abonnements' },
+    { icon: Settings, label: 'Parametres', href: '/dashboard/settings', description: 'Compte' },
   ];
   const isDashboardUser = isCreator || isAdmin;
   const navItems = isAdmin ? adminNavItems : isCreator ? creatorNavItems : learnerNavItems;
